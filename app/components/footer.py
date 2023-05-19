@@ -4,13 +4,9 @@ import dash_bootstrap_components as dbc
 
 def footer():
     layout = html.Div([
-        dbc.Footer(
+        html.Footer(
             children=[
-                dbc.Row(
-                    dbc.Col(
-                        html.P("This is a demo", className="mb-0")
-                    )
-                )
+                html.P("This is a demo", className="mb-0")
             ]
         )
     ])
