@@ -35,20 +35,19 @@ import os
 
 """Dowload dei file per nltk"""
 
-nltk.download('stopwords')
+# nltk.download('stopwords')
 
 
 """Definizione di alcune costanti"""
 
+ENABLE_OUT = False
 TARGET = 'sarcastic'
 CONTEXT_COLS = ['author', 'subreddit', 'parent']
 EMBEDDING_DIM = 300
 
 PROJECT_PATH = os.getcwd()
 DATA_PATH = os.path.join(PROJECT_PATH, "dataset")
-GLOVE_PATH = os.path.join(DATA_PATH + "glove.json")
-
-print(GLOVE_PATH)
+GLOVE_PATH = os.path.join(DATA_PATH, "glove.json")
 
 
 """### Fase di import del dataset e prima analisi
@@ -59,47 +58,56 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 
 """
 
-# df_full = pd.read_csv(DATA_PATH + "train-balanced.tsv", sep="\t", names=[TARGET, "text", "author", "subreddit",
-#                                                                          "date", "parent"]).sample(frac=0.05)
-# df_train, df_val = train_test_split(df_full, test_size=0.1)
-#
-# """Si definisce un metodo di preprocessing che:
-# - Rimuova le righe duplicate
-# - Rimuova le righe nulle (visto che sono poche non è necessario imputarle)
-# - Converta i tipi di variabile
-# """
-#
-#
-# def dataset_opening_preprocessing(dataframe):
-#     """
-#     Funzione generata dalla prima analisi del dataframe, serve per eliminare righe nulle e duplicate e
-#     per effettuare le conversioni di tipo
-#     :param dataframe: dataframe d'input
-#     :type dataframe: pd.DataFrame
-#     :return: dataframe processato
-#     :rtype: pd.DataFrame
-#     """
-#     dataframe = dataframe.dropna().drop_duplicates().reindex()
-#
-#     dataframe[TARGET] = dataframe[TARGET].astype("category")
-#     str_var = ['text', 'parent', 'subreddit', 'author']
-#     dataframe[str_var] = dataframe[str_var].astype("str")
-#     dataframe['date'] = pd.to_datetime(dataframe['date'], format="%Y-%m")
-#     dataframe['text'], dataframe['parent'] = dataframe['text'].str.lower(), dataframe['parent'].str.lower()
-#     return dataframe
-#
-#
-# df_train = dataset_opening_preprocessing(df_train)
-# print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
-#
-# # Analisi del target
-#
-# print("Stampa di 3 righe sarcastiche:\n", df_train.loc[df_train[TARGET] == 1].head(3)[[TARGET, 'text']], "\n")
-# print("Stampa di 3 righe non sarcastiche:\n", df_train.loc[df_train[TARGET] == 0].head(3)[[TARGET, 'text']], "\n\n")
-#
-# print("Distribuzione del target:")
-# print(df_train[TARGET].value_counts(normalize=True))
-#
+df_full = pd.read_csv(os.path.join(DATA_PATH, "data_full.tsv"),
+                      sep="\t", names=[TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
+
+df_train, df_val = train_test_split(df_full, test_size=0.1)
+
+if ENABLE_OUT:
+    print("Dimensione del dataset:\t", len(df_train), "\n")
+    print("tipi di variabile:\n", df_train.dtypes, "\n")
+    print("Prime righe di esempio:\n", df_train.head(3), "\n")
+    print("Righe nulle:\n", df_train.isna().sum(), "\n")
+    print("Righe duplicate:\n", df_train.duplicated().sum(), "\n")
+
+"""Si definisce un metodo di preprocessing che:
+- Rimuova le righe duplicate
+- Rimuova le righe nulle (visto che sono poche non è necessario imputarle)
+- Converta i tipi di variabile
+"""
+
+
+def dataset_opening_preprocessing(dataframe):
+    """
+    Funzione generata dalla prima analisi del dataframe, serve per eliminare righe nulle e duplicate e
+    per effettuare le conversioni di tipo
+    :param dataframe: dataframe d'input
+    :type dataframe: pd.DataFrame
+    :return: dataframe processato
+    :rtype: pd.DataFrame
+    """
+    dataframe = dataframe.dropna().drop_duplicates().reindex()
+    dataframe.index.name = "index"
+
+    dataframe[TARGET] = dataframe[TARGET].astype("category")
+    str_var = ['text', 'parent', 'subreddit', 'author']
+    dataframe[str_var] = dataframe[str_var].astype("str")
+    dataframe['date'] = pd.to_datetime(dataframe['date'], format="%Y-%m")
+    dataframe['text'], dataframe['parent'] = dataframe['text'].str.lower(), dataframe['parent'].str.lower()
+    return dataframe
+
+
+df_train = dataset_opening_preprocessing(df_train)
+df_train.to_csv(os.path.join(DATA_PATH, "train.csv"))
+
+if ENABLE_OUT:
+    print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
+    # Analisi del target
+    print("Stampa di 3 righe sarcastiche:\n", df_train.loc[df_train[TARGET] == 1].head(3)[[TARGET, 'text']], "\n")
+    print("Stampa di 3 righe non sarcastiche:\n", df_train.loc[df_train[TARGET] == 0].head(3)[[TARGET, 'text']], "\n\n")
+    print("Distribuzione del target:")
+    print(df_train[TARGET].value_counts(normalize=True))
+
 # """### Analisi di elementi ripetuti nel contesto, utile per verificare se essi possano essere fonte d'informazione
 # Si definiscono, e poi applicano, due funzioni a tal proposito:
 # """

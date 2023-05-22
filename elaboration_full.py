@@ -53,7 +53,7 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 
 """
 
-df_full = pd.read_csv(DATA_PATH + "dataset/train-balanced.tsv", sep="\t", names=[TARGET, "text", "author", "subreddit",
+df_full = pd.read_csv(DATA_PATH + "dataset/data_full.tsv", sep="\t", names=[TARGET, "text", "author", "subreddit",
                                                                                  "date", "parent"]).sample(frac=0.05)
 df_train, df_val = train_test_split(df_full, test_size=0.1)
 

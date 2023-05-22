@@ -71,7 +71,7 @@ def print_plot_most_common_token(series, num_print=10, num_plot=20,
 # '''''''''''''''''' Text Processing '''''''''''''''''''''
 
 
-df = pd.read_csv("dataset/train-balanced.tsv", sep="\t", names=["sarcastic", "text", "author", "subreddit",
+df = pd.read_csv("dataset/data_full.tsv", sep="\t", names=["sarcastic", "text", "author", "subreddit",
                                                                 "date", "parent"])
 df.index.name = "index"
 df = df.dropna()
