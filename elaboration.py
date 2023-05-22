@@ -30,6 +30,7 @@ from keras import metrics, losses, layers, activations, models, callbacks, utils
 import numpy as np
 from wordcloud import WordCloud
 import os
+import constants
 
 
 
@@ -45,10 +46,6 @@ TARGET = 'sarcastic'
 CONTEXT_COLS = ['author', 'subreddit', 'parent']
 EMBEDDING_DIM = 300
 
-PROJECT_PATH = os.getcwd()
-DATA_PATH = os.path.join(PROJECT_PATH, "dataset")
-GLOVE_PATH = os.path.join(DATA_PATH, "glove.json")
-
 
 """### Fase di import del dataset e prima analisi
 In questa fase verrà importato il dataset (suddividendolo in train e validation set) e si analizzerà:
@@ -58,7 +55,7 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 
 """
 
-df_full = pd.read_csv(os.path.join(DATA_PATH, "data_full.tsv"),
+df_full = pd.read_csv(os.path.join(constants.DATA_PATH, "data_full.tsv"),
                       sep="\t", names=[TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
 
 df_train, df_val = train_test_split(df_full, test_size=0.1)
@@ -98,7 +95,7 @@ def dataset_opening_preprocessing(dataframe):
 
 
 df_train = dataset_opening_preprocessing(df_train)
-df_train.to_csv(os.path.join(DATA_PATH, "train.csv"))
+df_train.to_csv(os.path.join(constants.DATA_PATH, "train.csv"))
 
 if ENABLE_OUT:
     print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
@@ -283,7 +280,7 @@ punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (d
 punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
 punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
 
-punctuation_freq.to_csv(os.path.join(DATA_PATH, "punctuation_freq.csv"))
+punctuation_freq.to_csv(os.path.join(constants.DATA_PATH, "punctuation_freq.csv"))
 
 if ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
@@ -329,7 +326,7 @@ df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemme
 train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
     'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
 
-train_text.to_csv(os.path.join(DATA_PATH, "train_text.csv"))
+train_text.to_csv(os.path.join(constants.DATA_PATH, "train_text.csv"))
 
 if ENABLE_OUT:
     print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
@@ -390,9 +387,9 @@ nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[TARGET], voc
                                   z_score=precision)
 st_hw = compute_helpful_words(df_train['text_st'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
 
-nsw_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "nsw_hw.csv"))
-nsw_st_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "nsw_st_hw.csv"))
-st_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "st_hw.csv"))
+nsw_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_hw.csv"))
+nsw_st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_st_hw.csv"))
+st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "st_hw.csv"))
 
 
 if ENABLE_OUT:
@@ -492,8 +489,8 @@ df_train['text'] = df_train['text'].apply(lambda words_list: " <> ".join(words_l
 df_train['parent'] = df_train['parent'].apply(lambda words_list: " <> ".join(words_list))
 df_val = dataset_processing(df_val, del_punctuation)
 
-df_train.to_csv(os.path.join(DATA_PATH, "train_processed.csv"))
-df_val.to_csv(os.path.join(DATA_PATH, "val_processed.csv"))
+df_train.to_csv(os.path.join(constants.DATA_PATH, "train_processed.csv"))
+df_val.to_csv(os.path.join(constants.DATA_PATH, "val_processed.csv"))
 
 
 # ## Fase di modellazione
