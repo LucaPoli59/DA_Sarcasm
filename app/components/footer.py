@@ -8,7 +8,8 @@ def footer():
             html.P("Footer test"),
         ],
         height=60,
-        fixed=True,
-        style={"background-color": "#333333", "color": "white", "text-align": "center", "padding-top": "20px"},
+        fixed=False,
+        style={"background-color": "#333333", "color": "white", "text-align": "center", "padding-top": "20px",
+               "margin-top": "20px"}
     )
     return layout

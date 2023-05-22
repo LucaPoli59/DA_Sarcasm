@@ -41,10 +41,6 @@ import constants
 
 """Definizione di alcune costanti"""
 
-ENABLE_OUT = False
-TARGET = 'sarcastic'
-CONTEXT_COLS = ['author', 'subreddit', 'parent']
-EMBEDDING_DIM = 300
 
 
 """### Fase di import del dataset e prima analisi
@@ -56,11 +52,11 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 """
 
 df_full = pd.read_csv(os.path.join(constants.DATA_PATH, "data_full.tsv"),
-                      sep="\t", names=[TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
+                      sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
 
 df_train, df_val = train_test_split(df_full, test_size=0.1)
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("Dimensione del dataset:\t", len(df_train), "\n")
     print("tipi di variabile:\n", df_train.dtypes, "\n")
     print("Prime righe di esempio:\n", df_train.head(3), "\n")
@@ -83,10 +79,10 @@ def dataset_opening_preprocessing(dataframe):
     :return: dataframe processato
     :rtype: pd.DataFrame
     """
-    dataframe = dataframe.dropna().drop_duplicates().reindex()
+    dataframe = dataframe.dropna().drop_duplicates().reset_index(drop=True)
     dataframe.index.name = "index"
 
-    dataframe[TARGET] = dataframe[TARGET].astype("category")
+    dataframe[constants.TARGET] = dataframe[constants.TARGET].astype("bool")
     str_var = ['text', 'parent', 'subreddit', 'author']
     dataframe[str_var] = dataframe[str_var].astype("str")
     dataframe['date'] = pd.to_datetime(dataframe['date'], format="%Y-%m")
@@ -97,13 +93,13 @@ def dataset_opening_preprocessing(dataframe):
 df_train = dataset_opening_preprocessing(df_train)
 df_train.to_csv(os.path.join(constants.DATA_PATH, "train.csv"))
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
     # Analisi del target
-    print("Stampa di 3 righe sarcastiche:\n", df_train.loc[df_train[TARGET] == 1].head(3)[[TARGET, 'text']], "\n")
-    print("Stampa di 3 righe non sarcastiche:\n", df_train.loc[df_train[TARGET] == 0].head(3)[[TARGET, 'text']], "\n\n")
+    print("Stampa di 3 righe sarcastiche:\n", df_train.loc[df_train[constants.TARGET] == 1].head(3)[[constants.TARGET, 'text']], "\n")
+    print("Stampa di 3 righe non sarcastiche:\n", df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
     print("Distribuzione del target:")
-    print(df_train[TARGET].value_counts(normalize=True))
+    print(df_train[constants.TARGET].value_counts(normalize=True))
 
 # """### Analisi di elementi ripetuti nel contesto, utile per verificare se essi possano essere fonte d'informazione
 # Si definiscono, e poi applicano, due funzioni a tal proposito:
@@ -261,7 +257,7 @@ tweet_tokenizer = TweetTokenizer()
 
 df_train['text_tokenized'] = df_train['text'].apply(lambda x: tweet_tokenizer.tokenize(x))
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("stampa di tre frasi con i relativi token:\n", df_train[['text', 'text_tokenized']].head(3), "\n\n")
     print_plot_most_common_token(df_train['text_tokenized'])
     plt.show()
@@ -272,17 +268,17 @@ all_punctuation = list(string.punctuation)
 all_punctuation.append("...")
 punctuation_freq = pd.DataFrame(columns=["sarcastic", "non_sarcastic"], index=all_punctuation, dtype="float64")
 punctuation_freq['sarcastic'] = punctuation_freq.apply(
-    lambda x: df_train.loc[df_train[TARGET] == 1, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
+    lambda x: df_train.loc[df_train[constants.TARGET] == 1, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
 punctuation_freq['non_sarcastic'] = punctuation_freq.apply(
-    lambda x: df_train.loc[df_train[TARGET] == 0, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
-punctuation_freq['sarcastic'] = punctuation_freq['sarcastic'] * 100 / (df_train[TARGET] == 1).sum()
-punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (df_train[TARGET] == 0).sum()
+    lambda x: df_train.loc[df_train[constants.TARGET] == 0, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
+punctuation_freq['sarcastic'] = punctuation_freq['sarcastic'] * 100 / (df_train[constants.TARGET] == 1).sum()
+punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (df_train[constants.TARGET] == 0).sum()
 punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
 punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
 
 punctuation_freq.to_csv(os.path.join(constants.DATA_PATH, "punctuation_freq.csv"))
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
     plt.subplots()
     punctuation_freq['rateo'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
@@ -297,7 +293,7 @@ del_punctuation = [point for point in list(all_punctuation) if point not in outl
 df_train['text_tokenized'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in del_punctuation])
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("I punti mantenuti sono:\t", outlier_punctuation)
     print_plot_most_common_token(df_train['text_tokenized'], text_print="Dopo la rimozione della punteggiatura:",
                                  title_plot="Dopo la rimozione della punteggiatura")
@@ -308,7 +304,7 @@ if ENABLE_OUT:
 df_train['text_nsw'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print_plot_most_common_token(df_train['text_nsw'], text_print="Dopo la rimozione delle stopword:",
                                  title_plot="Dopo la rimozione delle stopword")
     plt.show()
@@ -328,7 +324,7 @@ train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].
 
 train_text.to_csv(os.path.join(constants.DATA_PATH, "train_text.csv"))
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
                                  title_plot="Dopo la rimozione delle stopword e stemming")
     print_plot_most_common_token(df_train['text_st'], text_print="Dopo lo stemming:", title_plot="Dopo lo stemming")
@@ -359,11 +355,11 @@ def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
     text = text.apply(lambda words_list: " ".join(words_list))
 
     text_vectorized = text_vectorizer.fit_transform(text)
-    target = target.to_frame(TARGET)
+    target = target.to_frame(constants.TARGET)
     target['sparse_index'] = np.arange(len(target))
 
-    index_s = target.loc[target[TARGET] == 1, 'sparse_index']
-    index_ns = target.loc[target[TARGET] == 0, 'sparse_index']
+    index_s = target.loc[target[constants.TARGET] == 1, 'sparse_index']
+    index_ns = target.loc[target[constants.TARGET] == 0, 'sparse_index']
     text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
 
     text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
@@ -382,17 +378,17 @@ def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
 precision = 2
 vocab_size = None
 
-nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
-nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[TARGET], vocabulary_size=vocab_size,
+nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
+nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[constants.TARGET], vocabulary_size=vocab_size,
                                   z_score=precision)
-st_hw = compute_helpful_words(df_train['text_st'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
+st_hw = compute_helpful_words(df_train['text_st'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
 
 nsw_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_hw.csv"))
 nsw_st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_st_hw.csv"))
 st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "st_hw.csv"))
 
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
     print("\n\nIl migliore è:\t",
           pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
@@ -480,7 +476,7 @@ df_train['parent'] = text_processing(df_train['parent'], del_punctuation)  # Pro
 text_len = max_sentence_len(df_train['text'])
 parent_len = max_sentence_len(df_train['parent'])
 
-if ENABLE_OUT:
+if constants.ENABLE_OUT:
     print("lunghezza massima testo: ", text_len)
     print("lunghezza massima parent: ", parent_len)
 
