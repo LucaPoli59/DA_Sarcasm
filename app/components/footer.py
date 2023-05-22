@@ -1,13 +1,14 @@
 from dash import html
-import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 
 
 def footer():
-    layout = html.Div([
-        html.Footer(
-            children=[
-                html.P("This is a demo", className="mb-0")
-            ]
-        )
-    ])
+    layout = dmc.Footer(
+        children=[
+            html.P("Footer test"),
+        ],
+        height=60,
+        fixed=True,
+        style={"background-color": "#333333", "color": "white", "text-align": "center", "padding-top": "20px"},
+    )
     return layout
