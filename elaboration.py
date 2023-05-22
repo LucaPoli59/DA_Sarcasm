@@ -174,9 +174,10 @@ if ENABLE_OUT:
 #
 # df_s_vc, df_ns_vc, s_prop, df_unique_stats = compute_sarcastic_unique_stats(df_train, [100, 75, 50, 25])
 #
-# print("\n\n\nAnalisi del numero di subreddit, autori e parent unici:\n", df_unique_stats, "\n")
-# print("In percentuale:\n", df_unique_stats * 100 / len(df_train), "\n")
-# print("In percentuale rispetto alla categoria:\n", df_unique_stats.iloc[:-1] * 100 / df_unique_stats.iloc[-1], "\n")
+# if ENABLE_OUT:
+#     print("\n\n\nAnalisi del numero di subreddit, autori e parent unici:\n", df_unique_stats, "\n")
+#     print("In percentuale:\n", df_unique_stats * 100 / len(df_train), "\n")
+#     print("In percentuale rispetto alla categoria:\n", df_unique_stats.iloc[:-1] * 100 / df_unique_stats.iloc[-1], "\n")
 #
 # """Si individua la presenza di elementi duplicati nel contesto, principalmente per la feature 'subreddit'.
 # Si procede dunque con un'approfondimento su essa
@@ -187,287 +188,314 @@ if ENABLE_OUT:
 # subreddit_s_prop = subreddit_s_prop.loc[subreddit_s_prop['tot'] > 1]
 # subreddit_s_prop_outliers = subreddit_s_prop.loc[abs(zscore(subreddit_s_prop['tot'])) >= 3]
 # subreddit_s_prop = subreddit_s_prop.loc[abs(zscore(subreddit_s_prop['tot'])) < 3]
-# print("Proporzioni e num post di subreddit con numero di post > di 1:\n", subreddit_s_prop,
-#       "\ngli outliers sono:\n", subreddit_s_prop_outliers, "\n")
-# plt.scatter(subreddit_s_prop['proportion'], subreddit_s_prop['tot'])
-# plt.title("Scatter che mostra la presenza di subreddit a maggioranza sarcastici")
-# plt.xlabel("Rateo Sarcastici/Totali")
-# plt.ylabel("Numero di post")
-# plt.show()
 #
-# """## Fase di analisi del testo
-# In questa fase si analizza il testo del commento (quindi la feature 'text').
-# Verranno analizzati i token di cui esso si compone, e come la frequenza di essi varia nelle fasi di:
-# - Eliminazione della punteggiatura;
-# - Eliminazione delle stopwords;
-# - Stemming.
+# if ENABLE_OUT:
+#     print("Proporzioni e num post di subreddit con numero di post > di 1:\n", subreddit_s_prop,
+#           "\ngli outliers sono:\n", subreddit_s_prop_outliers, "\n")
+#     plt.scatter(subreddit_s_prop['proportion'], subreddit_s_prop['tot'])
+#     plt.title("Scatter che mostra la presenza di subreddit a maggioranza sarcastici")
+#     plt.xlabel("Rateo Sarcastici/Totali")
+#     plt.ylabel("Numero di post")
+#     plt.show()
 #
-# Producendo tre tipi di testo:
-# - nsw: senza stopwords;
-# - nsw_st: senza stopwords e con stemming;
-# - st: con stemming.
-# che verranno poi confrontati nella successiva analisi
-#
-# Si definiscono due funzioni generiche a tal proposito:
-# """
-#
-#
-# def values_count_from_list(series, normalize=False):
-#     """
-#     Funzione che prende una serie che contiene liste, e restituisce gli elementi più comuni
-#     :param series: serie d'input
-#     :type series: pd.Series
-#     :param normalize: parametro per attivare la normalizzazione
-#     :type normalize: bool
-#     :return: Serie di value count
-#     :rtype: pd.Series
-#     """
-#
-#     series_exploded = series.explode()
-#     return round(series_exploded.value_counts(normalize=normalize), 5)
-#
-#
-# def print_plot_most_common_token(series, num_print=10, num_plot=20,
-#                                  text_print="Frequenza nel testo dei token più comuni:",
-#                                  title_plot="Frequenza nel testo dei token più comuni"):
-#     """
-#     Funzione che stampa e plotta i token più comuni in una serie contente i token
-#     :param series: serie d'input
-#     :type series: pd.Series
-#     :param num_print: numero di token da stampare
-#     :type num_print: int
-#     :param num_plot: numero di token da usare nei plot
-#     :type num_plot: int
-#     :param text_print: testo da stampare a schermo
-#     :type text_print: str
-#     :param title_plot: titolo del plot
-#     :type title_plot: str
-#     :return: serie dei token più comune
-#     :rtype pd.Series
-#     """
-#     common_tokens = values_count_from_list(series, normalize=True)
-#     print("\n", text_print, "\n", common_tokens.head(num_print), "\n\n")
-#     fig, ax = plt.subplots()
-#     (common_tokens.head(num_plot) * 100).plot(kind='bar', title=title_plot, xlabel="Token", ylabel="Frequenza %")
-#     fig, ax = plt.subplots()
-#     plt.imshow(WordCloud(width=1600, height=800,
-#                          background_color="black").generate_from_frequencies(dict(common_tokens.to_dict())),
-#                interpolation='antialiased')
-#
-#
-# """Si procede con la tokenizzazione del testo"""
-#
-# tweet_tokenizer = TweetTokenizer()
-#
-# df_train['text_tokenized'] = df_train['text'].apply(lambda x: tweet_tokenizer.tokenize(x))
-# print("stampa di tre frasi con i relativi token:\n", df_train[['text', 'text_tokenized']].head(3), "\n\n")
-# print_plot_most_common_token(df_train['text_tokenized'])
-# plt.show()
-#
-# """Prima di eliminare la punteggiatura, si esamina la frequenza dei simboli in frasi sarcastiche e non, in quanto essi possono essere fonte d'informazione."""
-#
-# all_punctuation = list(string.punctuation)
-# all_punctuation.append("...")
-# punctuation_freq = pd.DataFrame(columns=["sarcastic", "non_sarcastic"], index=all_punctuation, dtype="float64")
-# punctuation_freq['sarcastic'] = punctuation_freq.apply(
-#     lambda x: df_train.loc[df_train[TARGET] == 1, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
-# punctuation_freq['non_sarcastic'] = punctuation_freq.apply(
-#     lambda x: df_train.loc[df_train[TARGET] == 0, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
-# punctuation_freq['sarcastic'] = punctuation_freq['sarcastic'] * 100 / (df_train[TARGET] == 1).sum()
-# punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (df_train[TARGET] == 0).sum()
-# punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
-# punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
-#
-# print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
-# plt.subplots()
-# punctuation_freq['rateo'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
-# plt.show()
-#
-# """Vista la distribuzione del rateo dei simboli, si decide di mantenere quelli che sono degli outliers alla distribuzione (perchè possono discriminare meglio una frase sarcastica o non)"""
-#
-# outlier_punctuation = punctuation_freq.loc[abs(zscore(punctuation_freq['rateo'])) >= 3].index.values
-# print("I punti mantenuti sono:\t", outlier_punctuation)
-#
-# # Rimozione
-# del_punctuation = [point for point in list(all_punctuation) if point not in outlier_punctuation]
-# df_train['text_tokenized'] = df_train['text_tokenized'].apply(
-#     lambda word_list: [word for word in word_list if word not in del_punctuation])
-# print_plot_most_common_token(df_train['text_tokenized'], text_print="Dopo la rimozione della punteggiatura:",
-#                              title_plot="Dopo la rimozione della punteggiatura")
-# plt.show()
-#
-# """Si procede con l'elminazione delle stopwords"""
-#
-# df_train['text_nsw'] = df_train['text_tokenized'].apply(
-#     lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
-# print_plot_most_common_token(df_train['text_nsw'], text_print="Dopo la rimozione delle stopword:",
-#                              title_plot="Dopo la rimozione delle stopword")
-# plt.show()
-#
-# """Si termina la fase con lo stemming"""
-#
-# # Stemming
-# stemmer = LancasterStemmer()
-# df_train['text_nsw_st'] = df_train['text_nsw'].apply(
-#     lambda word_list: [stemmer.stem(word) for word in word_list])
-# print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
-#                              title_plot="Dopo la rimozione delle stopword e stemming")
-#
-# # Stemming con stopwords
-# df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemmer.stem(word) for word in word_list])
-# print_plot_most_common_token(df_train['text_st'], text_print="Dopo lo stemming:", title_plot="Dopo lo stemming")
-# plt.show()
-#
-# """## Confronto dei tipi di testo
-# In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, st), in modo da individuare quale di essi porta più informazioni.
-#
-# """
-#
-#
-# def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
-#     """
-#     Funzione che calcola le parole più utili per un modello, calcolando le proporzioni in cui compaiono sarcastiche e
-#     non, per poi mantenere quelle che superano lo z score
-#     :param text: serie contente il testo da elaborare (sotto forma di lista di token)
-#     :type text: pd.Series
-#     :param target: serie del target che (avendo lo stesso indice di text) fornisce la label
-#     :type target: pd.Series
-#     :param vocabulary_size: numero di feature-parole da estrarre
-#     :type vocabulary_size: int or None
-#     :param z_score: precisione di esclusione
-#     :type z_score: float
-#     :return: dataframe che ha come indice le parole, e come valori le loro proporzioni
-#     :rtype: pd.DataFrame
-#     """
-#     text_vectorizer = CountVectorizer(max_features=vocabulary_size)
-#     text = text.apply(lambda words_list: " ".join(words_list))
-#
-#     text_vectorized = text_vectorizer.fit_transform(text)
-#     target = target.to_frame(TARGET)
-#     target['sparse_index'] = np.arange(len(target))
-#
-#     index_s = target.loc[target[TARGET] == 1, 'sparse_index']
-#     index_ns = target.loc[target[TARGET] == 0, 'sparse_index']
-#     text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
-#
-#     text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
-#     text_s_prop['sarcastic'] = np.array(text_vectorized_s.sum(axis=0))[0] / len(index_s)
-#     text_s_prop['not_sarcastic'] = np.array(text_vectorized_ns.sum(axis=0))[0] / len(index_ns)
-#     text_s_prop['rate'] = text_s_prop['sarcastic'] / (text_s_prop['sarcastic'] + text_s_prop['not_sarcastic'])
-#     text_s_prop['tot_occ'] = (text_s_prop['sarcastic'] * len(index_s) +
-#                               text_s_prop['not_sarcastic'] * len(index_ns))
-#
-#     # elimino le parole che occorrono poco
-#     text_s_prop = text_s_prop.loc[text_s_prop['tot_occ'] > text_s_prop['tot_occ'].quantile(0.3)]
-#
-#     return text_s_prop.loc[abs(zscore(text_s_prop['rate'])) >= z_score].sort_values(by='rate', ascending=False)
-#
-#
-# precision = 2
-# vocab_size = None
-#
-# nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
-# nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[TARGET], vocabulary_size=vocab_size,
-#                                   z_score=precision)
-# st_hw = compute_helpful_words(df_train['text_st'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
-#
-# print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
-# print("\n\nIl migliore è:\t",
-#       pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
-#                 ).sort_values(ascending=False))
-#
-# """Vista l'uguaglianza dei tre, si decide di usare il testo senza stopwords e stemming (in quanto di dimensione ridotta)
-#
-# """
-#
-# df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw', 'text_st']
-#                          ).rename(columns={'text_nsw_st': 'text'})
-#
-# """## Fase di preprocessing finale
-# In questa fase avviene il preprocessing finale prima del modello:
-# - Si elabora il testo parent come il testo del commento
-# - Si calcola la lunghezza delle frasi per il parent e per il testo
-# - Si preparano i dati del set di validation (usando i principi estratti dal train set)
-# """
-#
-#
-# def text_processing(text, punctuation, join_str=None):
-#     """
-#     Funzione che riapplica gli step di processing del testo, secondo la pipeline già eseguita
-#     :param text: serie contenente il testo
-#     :type text: pd.Series
-#     :param punctuation: punti da eliminare
-#     :type punctuation: list
-#     :param join_str: stringa usata per effettuare l0unione dei token (riconvertendo il testo da lista a stringa)
-#     :type join_str: str
-#     :return: serie del testo rielaborata
-#     :rtype: pd.Series
-#     """
-#
-#     tokenizer = TweetTokenizer()  # Tokenization
-#     tokenized = text.apply(lambda x: tokenizer.tokenize(x))
-#
-#     # eliminazione della punteggiatura
-#     tokenized = tokenized.apply(lambda word_list: [word for word in word_list if word not in punctuation])
-#
-#     # eliminazione delle stopwords
-#     nsw = tokenized.apply(lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
-#
-#     stem = LancasterStemmer()
-#     nsw_st = nsw.apply(lambda word_list: [stem.stem(word) for word in word_list])
-#
-#     if join_str is not None:
-#         nsw_st = nsw_st.apply(lambda words_list: join_str.join(words_list))
-#
-#     return nsw_st
-#
-#
-# def dataset_processing(dataframe, punctuation):
-#     """
-#     Funzione che elabora il dataset per essere usato dal modello
-#     :param dataframe: dataframe d'input
-#     :type dataframe: pd.DataFrame
-#     :param punctuation: punti da eliminare
-#     :type punctuation: list
-#     :return: dataframe rielaborato
-#     :rtype: pd.DataFrame
-#     """
-#     dataframe = dataset_opening_preprocessing(dataframe)
-#     dataframe['text'] = text_processing(dataframe['text'], punctuation, join_str=" <> ")
-#     dataframe['parent'] = text_processing(dataframe['parent'], punctuation, join_str=" <> ")
-#     return dataframe
-#
-#
-# def max_sentence_len(text):
-#     """
-#     Funzione che restituisce la lunghezza massima delle sentenze
-#     il valore massimo viene calcolato eliminando le sentenze troppo lunghe (quelle outliers, trovate tramite l'IQR)
-#     :param text: testo d'input
-#     :type text: pd.Series
-#     :return: lunghezza massima
-#     :rtype: int
-#     """
-#     text_s_len = text.apply(len)
-#     q1, q3 = text_s_len.quantile(0.25), text_s_len.quantile(0.75)
-#     return round(2 * (q3 + 1.5 * (q3 - q1)))
-#
-#
-# df_train['parent'] = text_processing(df_train['parent'], del_punctuation)  # Processo il parent come il testo normale
-#
-# # Calcolo il numero di token massimo nella distribuzione di testo e parent (parametro utilizzato dal modello)
-# text_len = max_sentence_len(df_train['text'])
-# parent_len = max_sentence_len(df_train['parent'])
-#
-# print("lunghezza massima testo: ", text_len)
-# print("lunghezza massima parent: ", parent_len)
-#
-# # Preparo i dati di train per il modello
-# df_train['text'] = df_train['text'].apply(lambda words_list: " <> ".join(words_list))
-# df_train['parent'] = df_train['parent'].apply(lambda words_list: " <> ".join(words_list))
-# df_val = dataset_processing(df_val, del_punctuation)
-#
-# """# TMP
-#
+"""## Fase di analisi del testo
+In questa fase si analizza il testo del commento (quindi la feature 'text').
+Verranno analizzati i token di cui esso si compone, e come la frequenza di essi varia nelle fasi di:
+- Eliminazione della punteggiatura;
+- Eliminazione delle stopwords;
+- Stemming.
+
+Producendo tre tipi di testo:
+- nsw: senza stopwords;
+- nsw_st: senza stopwords e con stemming;
+- st: con stemming.
+che verranno poi confrontati nella successiva analisi
+
+Si definiscono due funzioni generiche a tal proposito:
+"""
+
+
+def values_count_from_list(series, normalize=False):
+    """
+    Funzione che prende una serie che contiene liste, e restituisce gli elementi più comuni
+    :param series: serie d'input
+    :type series: pd.Series
+    :param normalize: parametro per attivare la normalizzazione
+    :type normalize: bool
+    :return: Serie di value count
+    :rtype: pd.Series
+    """
+
+    series_exploded = series.explode()
+    return round(series_exploded.value_counts(normalize=normalize), 5)
+
+
+def print_plot_most_common_token(series, num_print=10, num_plot=20,
+                                 text_print="Frequenza nel testo dei token più comuni:",
+                                 title_plot="Frequenza nel testo dei token più comuni"):
+    """
+    Funzione che stampa e plotta i token più comuni in una serie contente i token
+    :param series: serie d'input
+    :type series: pd.Series
+    :param num_print: numero di token da stampare
+    :type num_print: int
+    :param num_plot: numero di token da usare nei plot
+    :type num_plot: int
+    :param text_print: testo da stampare a schermo
+    :type text_print: str
+    :param title_plot: titolo del plot
+    :type title_plot: str
+    :return: serie dei token più comune
+    :rtype pd.Series
+    """
+    common_tokens = values_count_from_list(series, normalize=True)
+    print("\n", text_print, "\n", common_tokens.head(num_print), "\n\n")
+    fig, ax = plt.subplots()
+    (common_tokens.head(num_plot) * 100).plot(kind='bar', title=title_plot, xlabel="Token", ylabel="Frequenza %")
+    fig, ax = plt.subplots()
+    plt.imshow(WordCloud(width=1600, height=800,
+                         background_color="black").generate_from_frequencies(dict(common_tokens.to_dict())),
+               interpolation='antialiased')
+
+
+"""Si procede con la tokenizzazione del testo"""
+
+tweet_tokenizer = TweetTokenizer()
+
+df_train['text_tokenized'] = df_train['text'].apply(lambda x: tweet_tokenizer.tokenize(x))
+
+if ENABLE_OUT:
+    print("stampa di tre frasi con i relativi token:\n", df_train[['text', 'text_tokenized']].head(3), "\n\n")
+    print_plot_most_common_token(df_train['text_tokenized'])
+    plt.show()
+
+"""Prima di eliminare la punteggiatura, si esamina la frequenza dei simboli in frasi sarcastiche e non, in quanto essi possono essere fonte d'informazione."""
+
+all_punctuation = list(string.punctuation)
+all_punctuation.append("...")
+punctuation_freq = pd.DataFrame(columns=["sarcastic", "non_sarcastic"], index=all_punctuation, dtype="float64")
+punctuation_freq['sarcastic'] = punctuation_freq.apply(
+    lambda x: df_train.loc[df_train[TARGET] == 1, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
+punctuation_freq['non_sarcastic'] = punctuation_freq.apply(
+    lambda x: df_train.loc[df_train[TARGET] == 0, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
+punctuation_freq['sarcastic'] = punctuation_freq['sarcastic'] * 100 / (df_train[TARGET] == 1).sum()
+punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (df_train[TARGET] == 0).sum()
+punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
+punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
+
+punctuation_freq.to_csv(os.path.join(DATA_PATH, "punctuation_freq.csv"))
+
+if ENABLE_OUT:
+    print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
+    plt.subplots()
+    punctuation_freq['rateo'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
+    plt.show()
+
+
+"""Vista la distribuzione del rateo dei simboli, si decide di mantenere quelli che sono degli outliers alla distribuzione (perchè possono discriminare meglio una frase sarcastica o non)"""
+
+# Rimozione
+outlier_punctuation = punctuation_freq.loc[abs(zscore(punctuation_freq['rateo'])) >= 3].index.values
+del_punctuation = [point for point in list(all_punctuation) if point not in outlier_punctuation]
+df_train['text_tokenized'] = df_train['text_tokenized'].apply(
+    lambda word_list: [word for word in word_list if word not in del_punctuation])
+
+if ENABLE_OUT:
+    print("I punti mantenuti sono:\t", outlier_punctuation)
+    print_plot_most_common_token(df_train['text_tokenized'], text_print="Dopo la rimozione della punteggiatura:",
+                                 title_plot="Dopo la rimozione della punteggiatura")
+    plt.show()
+
+"""Si procede con l'eliminazione delle stopwords"""
+
+df_train['text_nsw'] = df_train['text_tokenized'].apply(
+    lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
+
+if ENABLE_OUT:
+    print_plot_most_common_token(df_train['text_nsw'], text_print="Dopo la rimozione delle stopword:",
+                                 title_plot="Dopo la rimozione delle stopword")
+    plt.show()
+
+"""Si termina la fase con lo stemming"""
+
+# Stemming
+stemmer = LancasterStemmer()
+df_train['text_nsw_st'] = df_train['text_nsw'].apply(
+    lambda word_list: [stemmer.stem(word) for word in word_list])
+
+# Stemming con stopwords
+df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemmer.stem(word) for word in word_list])
+
+train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
+    'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
+
+train_text.to_csv(os.path.join(DATA_PATH, "train_text.csv"))
+
+if ENABLE_OUT:
+    print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
+                                 title_plot="Dopo la rimozione delle stopword e stemming")
+    print_plot_most_common_token(df_train['text_st'], text_print="Dopo lo stemming:", title_plot="Dopo lo stemming")
+    plt.show()
+
+"""## Confronto dei tipi di testo
+In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, st), in modo da individuare quale di essi porta più informazioni.
+
+"""
+
+
+def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
+    """
+    Funzione che calcola le parole più utili per un modello, calcolando le proporzioni in cui compaiono sarcastiche e
+    non, per poi mantenere quelle che superano lo z score
+    :param text: serie contente il testo da elaborare (sotto forma di lista di token)
+    :type text: pd.Series
+    :param target: serie del target che (avendo lo stesso indice di text) fornisce la label
+    :type target: pd.Series
+    :param vocabulary_size: numero di feature-parole da estrarre
+    :type vocabulary_size: int or None
+    :param z_score: precisione di esclusione
+    :type z_score: float
+    :return: dataframe che ha come indice le parole, e come valori le loro proporzioni
+    :rtype: pd.DataFrame
+    """
+    text_vectorizer = CountVectorizer(max_features=vocabulary_size)
+    text = text.apply(lambda words_list: " ".join(words_list))
+
+    text_vectorized = text_vectorizer.fit_transform(text)
+    target = target.to_frame(TARGET)
+    target['sparse_index'] = np.arange(len(target))
+
+    index_s = target.loc[target[TARGET] == 1, 'sparse_index']
+    index_ns = target.loc[target[TARGET] == 0, 'sparse_index']
+    text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
+
+    text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
+    text_s_prop['sarcastic'] = np.array(text_vectorized_s.sum(axis=0))[0] / len(index_s)
+    text_s_prop['not_sarcastic'] = np.array(text_vectorized_ns.sum(axis=0))[0] / len(index_ns)
+    text_s_prop['rate'] = text_s_prop['sarcastic'] / (text_s_prop['sarcastic'] + text_s_prop['not_sarcastic'])
+    text_s_prop['tot_occ'] = (text_s_prop['sarcastic'] * len(index_s) +
+                              text_s_prop['not_sarcastic'] * len(index_ns))
+
+    # elimino le parole che occorrono poco
+    text_s_prop = text_s_prop.loc[text_s_prop['tot_occ'] > text_s_prop['tot_occ'].quantile(0.3)]
+
+    return text_s_prop.loc[abs(zscore(text_s_prop['rate'])) >= z_score].sort_values(by='rate', ascending=False)
+
+
+precision = 2
+vocab_size = None
+
+nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
+nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[TARGET], vocabulary_size=vocab_size,
+                                  z_score=precision)
+st_hw = compute_helpful_words(df_train['text_st'], df_train[TARGET], vocabulary_size=vocab_size, z_score=precision)
+
+nsw_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "nsw_hw.csv"))
+nsw_st_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "nsw_st_hw.csv"))
+st_hw.to_csv(os.path.join(DATA_PATH, "train_text_hp", "st_hw.csv"))
+
+
+if ENABLE_OUT:
+    print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
+    print("\n\nIl migliore è:\t",
+          pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
+                    ).sort_values(ascending=False))
+
+"""Vista l'uguaglianza dei tre, si decide di usare il testo senza stopwords e stemming (in quanto di dimensione ridotta)
+
+"""
+
+df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw', 'text_st']
+                         ).rename(columns={'text_nsw_st': 'text'})
+
+"""## Fase di preprocessing finale
+In questa fase avviene il preprocessing finale prima del modello:
+- Si elabora il testo parent come il testo del commento
+- Si calcola la lunghezza delle frasi per il parent e per il testo
+- Si preparano i dati del set di validation (usando i principi estratti dal train set)
+"""
+
+
+def text_processing(text, punctuation, join_str=None):
+    """
+    Funzione che riapplica gli step di processing del testo, secondo la pipeline già eseguita
+    :param text: serie contenente il testo
+    :type text: pd.Series
+    :param punctuation: punti da eliminare
+    :type punctuation: list
+    :param join_str: stringa usata per effettuare l0unione dei token (riconvertendo il testo da lista a stringa)
+    :type join_str: str
+    :return: serie del testo rielaborata
+    :rtype: pd.Series
+    """
+
+    tokenizer = TweetTokenizer()  # Tokenization
+    tokenized = text.apply(lambda x: tokenizer.tokenize(x))
+
+    # eliminazione della punteggiatura
+    tokenized = tokenized.apply(lambda word_list: [word for word in word_list if word not in punctuation])
+
+    # eliminazione delle stopwords
+    nsw = tokenized.apply(lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
+
+    stem = LancasterStemmer()
+    nsw_st = nsw.apply(lambda word_list: [stem.stem(word) for word in word_list])
+
+    if join_str is not None:
+        nsw_st = nsw_st.apply(lambda words_list: join_str.join(words_list))
+
+    return nsw_st
+
+
+def dataset_processing(dataframe, punctuation):
+    """
+    Funzione che elabora il dataset per essere usato dal modello
+    :param dataframe: dataframe d'input
+    :type dataframe: pd.DataFrame
+    :param punctuation: punti da eliminare
+    :type punctuation: list
+    :return: dataframe rielaborato
+    :rtype: pd.DataFrame
+    """
+    dataframe = dataset_opening_preprocessing(dataframe)
+    dataframe['text'] = text_processing(dataframe['text'], punctuation, join_str=" <> ")
+    dataframe['parent'] = text_processing(dataframe['parent'], punctuation, join_str=" <> ")
+    return dataframe
+
+
+def max_sentence_len(text):
+    """
+    Funzione che restituisce la lunghezza massima delle sentenze
+    il valore massimo viene calcolato eliminando le sentenze troppo lunghe (quelle outliers, trovate tramite l'IQR)
+    :param text: testo d'input
+    :type text: pd.Series
+    :return: lunghezza massima
+    :rtype: int
+    """
+    text_s_len = text.apply(len)
+    q1, q3 = text_s_len.quantile(0.25), text_s_len.quantile(0.75)
+    return round(2 * (q3 + 1.5 * (q3 - q1)))
+
+
+df_train['parent'] = text_processing(df_train['parent'], del_punctuation)  # Processo il parent come il testo normale
+
+# Calcolo il numero di token massimo nella distribuzione di testo e parent (parametro utilizzato dal modello)
+text_len = max_sentence_len(df_train['text'])
+parent_len = max_sentence_len(df_train['parent'])
+
+if ENABLE_OUT:
+    print("lunghezza massima testo: ", text_len)
+    print("lunghezza massima parent: ", parent_len)
+
+# Preparo i dati di train per il modello
+df_train['text'] = df_train['text'].apply(lambda words_list: " <> ".join(words_list))
+df_train['parent'] = df_train['parent'].apply(lambda words_list: " <> ".join(words_list))
+df_val = dataset_processing(df_val, del_punctuation)
+
+df_train.to_csv(os.path.join(DATA_PATH, "train_processed.csv"))
+df_val.to_csv(os.path.join(DATA_PATH, "val_processed.csv"))
+
+
 # ## Fase di modellazione
 # In questa fase verrà definita e addestrata la rete neurale adottata
 # """
