@@ -123,7 +123,9 @@ def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
     df_freq['tot'] = df_freq['sarc_freq'] + df_freq['n_sarc_freq']
     df_freq['prop'] = df_freq['sarc_freq'] / df_freq['tot']
 
-    return df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
+    df_freq.index.name = "element"
+    df_freq = df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
+    return df_freq
 
 
 for context_feature in ['subreddit', 'author', 'date']:
@@ -137,7 +139,7 @@ df_train_len = df_train[['sarcastic', 'text', 'parent']].copy()
 df_train_len[['text', 'parent']] = df_train_len[['text', 'parent']].applymap(lambda x: len(x.split()))
 
 for feature in ['text', 'parent']:
-    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]]).drop('tot', axis=1)
+    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]])
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_" + feature + ".csv"))
 
     if constants.ENABLE_OUT:
@@ -232,6 +234,7 @@ punctuation_freq['prop'] = punctuation_freq['sarc_freq'] / punctuation_freq['tot
 punctuation_freq = punctuation_freq.dropna()
 punctuation_freq = punctuation_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
 
+punctuation_freq.index.name = "element"
 punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "punctuation.csv"))
 
 if constants.ENABLE_OUT:
@@ -278,6 +281,7 @@ df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemme
 train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
     'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
 
+punctuation_freq.index.name = "index"
 train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
 if constants.ENABLE_OUT:
