@@ -95,6 +95,8 @@ def dataset_opening_preprocessing(dataframe):
 df_train = dataset_opening_preprocessing(df_train)
 df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"))
 
+sarcastic_prop = df_train[constants.TARGET].value_counts()
+
 if constants.ENABLE_OUT:
     print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
     # Analisi del target
@@ -103,11 +105,7 @@ if constants.ENABLE_OUT:
     print("Stampa di 3 righe non sarcastiche:\n",
           df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
     print("Distribuzione del target:")
-    print(df_train[constants.TARGET].value_counts(normalize=True))
-
-# """### Analisi di elementi ripetuti nel contesto, utile per verificare se essi possano essere fonte d'informazione
-# Si definiscono, e poi applicano, due funzioni a tal proposito:
-# """
+    print(sarcastic_prop / df_train.shape[0] * 100)
 
 
 def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
@@ -116,48 +114,36 @@ def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
     :param df: dataset contenente il target sarcastic e la feature
     :return: dataframe contenete per ogni feature unica, la sua frequenza e proporzione
     """
-    feature = df.columns[-1]
 
     sc_rows = df[constants.TARGET] == 1
-    sc_vc = df.loc[sc_rows, feature].value_counts()
-    nsc_vc = df.loc[~sc_rows, feature].value_counts()
+    sc_vc = df.loc[sc_rows, df.columns[-1]].value_counts()
+    nsc_vc = df.loc[~sc_rows, df.columns[-1]].value_counts()
 
-    df_freq = pd.DataFrame({'sarcastic_f': sc_vc, 'not_sarcastic_f': nsc_vc}).fillna(0)
-    df_freq['tot'] = df_freq['sarcastic_f'] + df_freq['not_sarcastic_f']
-    df_freq['sarcastic_p'] = df_freq['sarcastic_f'] / df_freq['tot']
+    df_freq = pd.DataFrame({'sarc_freq': sc_vc, 'n_sarc_freq': nsc_vc}).fillna(0)
+    df_freq['tot'] = df_freq['sarc_freq'] + df_freq['n_sarc_freq']
+    df_freq['prop'] = df_freq['sarc_freq'] / df_freq['tot']
 
-    return df_freq
-
-
+    return df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
 
 
+for context_feature in ['subreddit', 'author', 'date']:
+    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, context_feature]])
+    sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, context_feature + ".csv"))
+
+    if constants.ENABLE_OUT:
+        print("\nAnalisi delle proporzioni sarcastiche per ", context_feature, ":\n", sarc_prop.head(5), "\n\n")
+
+df_train_len = df_train[['sarcastic', 'text', 'parent']].copy()
+df_train_len[['text', 'parent']] = df_train_len[['text', 'parent']].applymap(lambda x: len(x.split()))
+
+for feature in ['text', 'parent']:
+    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]]).drop('tot', axis=1)
+    sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_" + feature + ".csv"))
+
+    if constants.ENABLE_OUT:
+        print("\nAnalisi delle proporzioni sarcastiche per la lunghezza di ", feature, ":\n", sarc_prop.head(5), "\n\n")
 
 
-#
-# if ENABLE_OUT:
-#     print("\n\n\nAnalisi del numero di subreddit, autori e parent unici:\n", df_unique_stats, "\n")
-#     print("In percentuale:\n", df_unique_stats * 100 / len(df_train), "\n")
-#     print("In percentuale rispetto alla categoria:\n", df_unique_stats.iloc[:-1] * 100 / df_unique_stats.iloc[-1], "\n")
-#
-# """Si individua la presenza di elementi duplicati nel contesto, principalmente per la feature 'subreddit'.
-# Si procede dunque con un'approfondimento su essa
-# """
-#
-# subreddit_s_prop = s_prop['subreddit'].loc[s_prop['subreddit']['proportion'] >= 0.75]
-# # si considerano i subreddit con più di un post e si eliminano gli outlier per maggiore chiarezza
-# subreddit_s_prop = subreddit_s_prop.loc[subreddit_s_prop['tot'] > 1]
-# subreddit_s_prop_outliers = subreddit_s_prop.loc[abs(zscore(subreddit_s_prop['tot'])) >= 3]
-# subreddit_s_prop = subreddit_s_prop.loc[abs(zscore(subreddit_s_prop['tot'])) < 3]
-#
-# if ENABLE_OUT:
-#     print("Proporzioni e num post di subreddit con numero di post > di 1:\n", subreddit_s_prop,
-#           "\ngli outliers sono:\n", subreddit_s_prop_outliers, "\n")
-#     plt.scatter(subreddit_s_prop['proportion'], subreddit_s_prop['tot'])
-#     plt.title("Scatter che mostra la presenza di subreddit a maggioranza sarcastici")
-#     plt.xlabel("Rateo Sarcastici/Totali")
-#     plt.ylabel("Numero di post")
-#     plt.show()
-#
 """## Fase di analisi del testo
 In questa fase si analizza il testo del commento (quindi la feature 'text').
 Verranno analizzati i token di cui esso si compone, e come la frequenza di essi varia nelle fasi di:
@@ -233,29 +219,32 @@ if constants.ENABLE_OUT:
 
 all_punctuation = list(string.punctuation)
 all_punctuation.append("...")
-punctuation_freq = pd.DataFrame(columns=["sarcastic", "non_sarcastic"], index=all_punctuation, dtype="float64")
-punctuation_freq['sarcastic'] = punctuation_freq.apply(
-    lambda x: df_train.loc[df_train[constants.TARGET] == 1, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
-punctuation_freq['non_sarcastic'] = punctuation_freq.apply(
-    lambda x: df_train.loc[df_train[constants.TARGET] == 0, 'text'].str.contains(re.escape(x.name)).sum(), axis="columns")
-punctuation_freq['sarcastic'] = punctuation_freq['sarcastic'] * 100 / (df_train[constants.TARGET] == 1).sum()
-punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (df_train[constants.TARGET] == 0).sum()
-punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
-punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
 
-punctuation_freq.to_csv(os.path.join(constants.DATA_OUT_PATH, "punctuation_freq.csv"))
+punctuation_freq = pd.DataFrame(columns=["sarc_freq", "n_sarc_freq"], index=all_punctuation, dtype="float64")
+
+for mark in punctuation_freq.index:
+    text_wm = df_train.loc[df_train['text'].str.contains(re.escape(mark)), [constants.TARGET, 'text']]
+    punctuation_freq.loc[mark, 'sarc_freq'] = (text_wm[constants.TARGET] == 1).sum()
+    punctuation_freq.loc[mark, 'n_sarc_freq'] = (text_wm[constants.TARGET] == 0).sum()
+
+punctuation_freq['tot'] = punctuation_freq['sarc_freq'] + punctuation_freq['n_sarc_freq']
+punctuation_freq['prop'] = punctuation_freq['sarc_freq'] / punctuation_freq['tot']
+punctuation_freq = punctuation_freq.dropna()
+punctuation_freq = punctuation_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
+
+punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "punctuation.csv"))
 
 if constants.ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
     plt.subplots()
-    punctuation_freq['rateo'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
+    punctuation_freq['prop'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
     plt.show()
 
 
 """Vista la distribuzione del rateo dei simboli, si decide di mantenere quelli che sono degli outliers alla distribuzione (perchè possono discriminare meglio una frase sarcastica o non)"""
 
 # Rimozione
-outlier_punctuation = punctuation_freq.loc[abs(zscore(punctuation_freq['rateo'])) >= 3].index.values
+outlier_punctuation = punctuation_freq.loc[abs(zscore(punctuation_freq['prop'])) >= 3].index.values
 del_punctuation = [point for point in list(all_punctuation) if point not in outlier_punctuation]
 df_train['text_tokenized'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in del_punctuation])
@@ -302,68 +291,79 @@ In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, s
 
 """
 
-
-def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
-    """
-    Funzione che calcola le parole più utili per un modello, calcolando le proporzioni in cui compaiono sarcastiche e
-    non, per poi mantenere quelle che superano lo z score
-    :param text: serie contente il testo da elaborare (sotto forma di lista di token)
-    :type text: pd.Series
-    :param target: serie del target che (avendo lo stesso indice di text) fornisce la label
-    :type target: pd.Series
-    :param vocabulary_size: numero di feature-parole da estrarre
-    :type vocabulary_size: int or None
-    :param z_score: precisione di esclusione
-    :type z_score: float
-    :return: dataframe che ha come indice le parole, e come valori le loro proporzioni
-    :rtype: pd.DataFrame
-    """
-    text_vectorizer = CountVectorizer(max_features=vocabulary_size)
-    text = text.apply(lambda words_list: " ".join(words_list))
-
-    text_vectorized = text_vectorizer.fit_transform(text)
-    target = target.to_frame(constants.TARGET)
-    target['sparse_index'] = np.arange(len(target))
-
-    index_s = target.loc[target[constants.TARGET] == 1, 'sparse_index']
-    index_ns = target.loc[target[constants.TARGET] == 0, 'sparse_index']
-    text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
-
-    text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
-    text_s_prop['sarcastic'] = np.array(text_vectorized_s.sum(axis=0))[0] / len(index_s)
-    text_s_prop['not_sarcastic'] = np.array(text_vectorized_ns.sum(axis=0))[0] / len(index_ns)
-    text_s_prop['rate'] = text_s_prop['sarcastic'] / (text_s_prop['sarcastic'] + text_s_prop['not_sarcastic'])
-    text_s_prop['tot_occ'] = (text_s_prop['sarcastic'] * len(index_s) +
-                              text_s_prop['not_sarcastic'] * len(index_ns))
-
-    # elimino le parole che occorrono poco
-    text_s_prop = text_s_prop.loc[text_s_prop['tot_occ'] > text_s_prop['tot_occ'].quantile(0.3)]
-
-    return text_s_prop.loc[abs(zscore(text_s_prop['rate'])) >= z_score].sort_values(by='rate', ascending=False)
-
-
-precision = 2
-vocab_size = None
-
-nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
-nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[constants.TARGET], vocabulary_size=vocab_size,
-                                  z_score=precision)
-st_hw = compute_helpful_words(df_train['text_st'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
-
-nsw_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_hw.csv"))
-nsw_st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_st_hw.csv"))
-st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "st_hw.csv"))
-
-
-if constants.ENABLE_OUT:
-    print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
-    print("\n\nIl migliore è:\t",
-          pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
-                    ).sort_values(ascending=False))
-
-"""Vista l'uguaglianza dei tre, si decide di usare il testo senza stopwords e stemming (in quanto di dimensione ridotta)
-
+"""## Confronto tramite sarcastic value rate
 """
+
+for text_type in ['text_nsw', 'text_nsw_st', 'text_st']:
+    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type))
+    sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "text_" + text_type + ".csv"))
+
+    if constants.ENABLE_OUT:
+        print("\nAnalisi delle proporzioni sarcastiche per testo di tipo ", text_type, ":\n", sarc_prop.head(5), "\n\n")
+
+
+#
+# def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
+#     """
+#     Funzione che calcola le parole più utili per un modello, calcolando le proporzioni in cui compaiono sarcastiche e
+#     non, per poi mantenere quelle che superano lo z score
+#     :param text: serie contente il testo da elaborare (sotto forma di lista di token)
+#     :type text: pd.Series
+#     :param target: serie del target che (avendo lo stesso indice di text) fornisce la label
+#     :type target: pd.Series
+#     :param vocabulary_size: numero di feature-parole da estrarre
+#     :type vocabulary_size: int or None
+#     :param z_score: precisione di esclusione
+#     :type z_score: float
+#     :return: dataframe che ha come indice le parole, e come valori le loro proporzioni
+#     :rtype: pd.DataFrame
+#     """
+#     text_vectorizer = CountVectorizer(max_features=vocabulary_size)
+#     text = text.apply(lambda words_list: " ".join(words_list))
+#
+#     text_vectorized = text_vectorizer.fit_transform(text)
+#     target = target.to_frame(constants.TARGET)
+#     target['sparse_index'] = np.arange(len(target))
+#
+#     index_s = target.loc[target[constants.TARGET] == 1, 'sparse_index']
+#     index_ns = target.loc[target[constants.TARGET] == 0, 'sparse_index']
+#     text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
+#
+#     text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
+#     text_s_prop['sarcastic'] = np.array(text_vectorized_s.sum(axis=0))[0] / len(index_s)
+#     text_s_prop['not_sarcastic'] = np.array(text_vectorized_ns.sum(axis=0))[0] / len(index_ns)
+#     text_s_prop['rate'] = text_s_prop['sarcastic'] / (text_s_prop['sarcastic'] + text_s_prop['not_sarcastic'])
+#     text_s_prop['tot_occ'] = (text_s_prop['sarcastic'] * len(index_s) +
+#                               text_s_prop['not_sarcastic'] * len(index_ns))
+#
+#     # elimino le parole che occorrono poco
+#     text_s_prop = text_s_prop.loc[text_s_prop['tot_occ'] > text_s_prop['tot_occ'].quantile(0.3)]
+#
+#     return text_s_prop.loc[abs(zscore(text_s_prop['rate'])) >= z_score].sort_values(by='rate', ascending=False)
+#
+#
+# precision = 2
+# vocab_size = None
+#
+# nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
+# nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[constants.TARGET], vocabulary_size=vocab_size,
+#                                   z_score=precision)
+# st_hw = compute_helpful_words(df_train['text_st'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
+#
+# nsw_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_hw.csv"))
+# nsw_st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_st_hw.csv"))
+# st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "st_hw.csv"))
+#
+#
+# if constants.ENABLE_OUT:
+#     print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
+#     print("\n\nIl migliore è:\t",
+#           pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
+#                     ).sort_values(ascending=False))
+#
+# """Vista l'uguaglianza dei tre, si decide di usare il testo senza stopwords e stemming (in quanto di dimensione ridotta)
+#
+# """
 
 df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw', 'text_st']
                          ).rename(columns={'text_nsw_st': 'text'})

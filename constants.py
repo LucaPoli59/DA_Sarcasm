@@ -17,6 +17,10 @@ DATA_OUT_PATH = os.path.join(DATA_PATH, "output")
 if not os.path.exists(DATA_OUT_PATH):
     os.mkdir(DATA_OUT_PATH)
 
+DATA_SP_PATH = os.path.join(DATA_OUT_PATH, "sp")
+if not os.path.exists(DATA_SP_PATH):
+    os.mkdir(DATA_SP_PATH)
+
 ENABLE_OUT = False
 TARGET = 'sarcastic'
 CONTEXT_COLS = ['author', 'subreddit', 'parent']
