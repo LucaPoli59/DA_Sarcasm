@@ -54,6 +54,8 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 df_full = pd.read_csv(os.path.join(constants.DATA_PATH, "data_full.tsv"),
                       sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
 
+df_full.to_csv(os.path.join(constants.DATA_PATH, "data_full_sample.csv"))
+
 df_train, df_val = train_test_split(df_full, test_size=0.1)
 
 if constants.ENABLE_OUT:
