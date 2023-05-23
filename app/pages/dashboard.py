@@ -9,8 +9,8 @@ import constants
 import timeit
 
 
-df_s = pd.read_csv(os.path.join(constants.DATA_PATH, "data_full_sample.csv")).iloc[:, 1:]
-df_t = pd.read_csv(os.path.join(constants.DATA_PATH, "train.csv"), index_col="index")
+df_s = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "data_full_sample.csv")).iloc[:, 1:]
+df_t = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"), index_col="index")
 df_t['date'] = pd.to_datetime(df_t['date'])
 df_t['sarcastic'] = df_t['sarcastic'].astype('int')
 

@@ -51,10 +51,10 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 
 """
 
-df_full = pd.read_csv(os.path.join(constants.DATA_PATH, "data_full.tsv"),
+df_full = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "data_full.tsv"),
                       sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
 
-df_full.to_csv(os.path.join(constants.DATA_PATH, "data_full_sample.csv"))
+df_full.to_csv(os.path.join(constants.DATA_OUT_PATH, "data_full_sample.csv"))
 
 df_train, df_val = train_test_split(df_full, test_size=0.1)
 
@@ -93,81 +93,46 @@ def dataset_opening_preprocessing(dataframe):
 
 
 df_train = dataset_opening_preprocessing(df_train)
-df_train.to_csv(os.path.join(constants.DATA_PATH, "train.csv"))
+df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"))
 
 if constants.ENABLE_OUT:
     print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
     # Analisi del target
-    print("Stampa di 3 righe sarcastiche:\n", df_train.loc[df_train[constants.TARGET] == 1].head(3)[[constants.TARGET, 'text']], "\n")
-    print("Stampa di 3 righe non sarcastiche:\n", df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
+    print("Stampa di 3 righe sarcastiche:\n",
+          df_train.loc[df_train[constants.TARGET] == 1].head(3)[[constants.TARGET, 'text']], "\n")
+    print("Stampa di 3 righe non sarcastiche:\n",
+          df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
     print("Distribuzione del target:")
     print(df_train[constants.TARGET].value_counts(normalize=True))
 
 # """### Analisi di elementi ripetuti nel contesto, utile per verificare se essi possano essere fonte d'informazione
 # Si definiscono, e poi applicano, due funzioni a tal proposito:
 # """
-#
-#
-# def compute_proportions_series(s1, s2):
-#     """
-#     Funzione, di appoggio, che prende due serie intere con indici simili (alcuni elementi in comune, ma non tutte)
-#     ed effettua la proporzione della prima sull'altra
-#     :param s1: prima serie d'input
-#     :type s1: pd.Series
-#     :param s2: seconda serie d'input
-#     :type s2: pd.Series
-#     :return: Dataframe risultate contente le proporzioni e il numero totale di elementi
-#     :rtype: pd.DataFrame
-#     """
-#
-#     s1_r = s1.reindex(s1.index.join(s2.index, how="outer"), fill_value=0)
-#     s2_r = s2.reindex(s1.index.join(s2.index, how="outer"), fill_value=0)
-#
-#     df_out = pd.DataFrame(columns=['proportion', 'tot'], index=s1_r.index)
-#     df_out['tot'] = s1_r + s2_r
-#     df_out['proportion'] = s1_r / df_out['tot']
-#
-#     return df_out
-#
-#
-# def compute_sarcastic_unique_stats(dataframe, thresholds):
-#     """
-#     Funzione che calcola per ogni elemento del contesto il value_counts sarcastico e non.
-#     Calcola inoltre il numero di elementi unici che superano delle soglie di sarcasmo,
-#     e restituisce anche le loro proporzioni
-#
-#     :param dataframe: dataframe di elaborazione
-#     :type dataframe: pd.DataFrame
-#     :param thresholds: soglie in cui calcolare il numero di elementi unici sarcastici
-#     :type thresholds: list
-#     :return: sarcastic_vc, no_sarcastic_vc, sarcastic_proportions, sarcastic_unique_stats
-#     :rtype: (pd.Series, pd.Series, pd.Series, pd.DataFrame)
-#     """
-#
-#     dataframe_s = dataframe.loc[dataframe[TARGET] == 1]
-#     dataframe_ns = dataframe.loc[dataframe[TARGET] == 0]
-#
-#     sarcastic_vc = pd.Series(data=[dataframe_s[col].value_counts() for col in CONTEXT_COLS], index=CONTEXT_COLS)
-#     no_sarcastic_vc = pd.Series(data=[dataframe_ns[col].value_counts() for col in CONTEXT_COLS], index=CONTEXT_COLS)
-#     sarcastic_proportions = pd.Series(index=CONTEXT_COLS, dtype="object")
-#
-#     unique_stats = pd.DataFrame(columns=CONTEXT_COLS, index=thresholds)
-#
-#     tot = dataframe[CONTEXT_COLS].nunique()
-#
-#     for col in CONTEXT_COLS:
-#         proportions = compute_proportions_series(sarcastic_vc[col], no_sarcastic_vc[col])
-#         sarcastic_proportions[col] = proportions.sort_values(by='proportion', ascending=False)
-#
-#         unique_stats[col] = unique_stats[col].to_frame().apply(
-#             lambda row: (proportions['proportion'] >= row.name / 100).sum(), axis="columns")
-#
-#     unique_stats.loc['tot unique'] = tot
-#
-#     return sarcastic_vc, no_sarcastic_vc, sarcastic_proportions, unique_stats
-#
-#
-# df_s_vc, df_ns_vc, s_prop, df_unique_stats = compute_sarcastic_unique_stats(df_train, [100, 75, 50, 25])
+
+
+def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcola la proporzione di sarcastic e non sarcastic delle feature uniche della colonna feature
+    :param df: dataset contenente il target sarcastic e la feature
+    :return: dataframe contenete per ogni feature unica, la sua frequenza e proporzione
+    """
+    feature = df.columns[-1]
+
+    sc_rows = df[constants.TARGET] == 1
+    sc_vc = df.loc[sc_rows, feature].value_counts()
+    nsc_vc = df.loc[~sc_rows, feature].value_counts()
+
+    df_freq = pd.DataFrame({'sarcastic_f': sc_vc, 'not_sarcastic_f': nsc_vc}).fillna(0)
+    df_freq['tot'] = df_freq['sarcastic_f'] + df_freq['not_sarcastic_f']
+    df_freq['sarcastic_p'] = df_freq['sarcastic_f'] / df_freq['tot']
+
+    return df_freq
+
+
+
+
+
+
 #
 # if ENABLE_OUT:
 #     print("\n\n\nAnalisi del numero di subreddit, autori e parent unici:\n", df_unique_stats, "\n")
@@ -278,7 +243,7 @@ punctuation_freq['non_sarcastic'] = punctuation_freq['non_sarcastic'] * 100 / (d
 punctuation_freq['rateo'] = round(punctuation_freq['sarcastic'] / punctuation_freq['non_sarcastic'], 4).fillna(0)
 punctuation_freq = punctuation_freq.sort_values(by='rateo', ascending=False)
 
-punctuation_freq.to_csv(os.path.join(constants.DATA_PATH, "punctuation_freq.csv"))
+punctuation_freq.to_csv(os.path.join(constants.DATA_OUT_PATH, "punctuation_freq.csv"))
 
 if constants.ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
@@ -324,7 +289,7 @@ df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemme
 train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
     'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
 
-train_text.to_csv(os.path.join(constants.DATA_PATH, "train_text.csv"))
+train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
 if constants.ENABLE_OUT:
     print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
@@ -385,9 +350,9 @@ nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[constants.TA
                                   z_score=precision)
 st_hw = compute_helpful_words(df_train['text_st'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
 
-nsw_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_hw.csv"))
-nsw_st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "nsw_st_hw.csv"))
-st_hw.to_csv(os.path.join(constants.DATA_PATH, "train_text_hp", "st_hw.csv"))
+nsw_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_hw.csv"))
+nsw_st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_st_hw.csv"))
+st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "st_hw.csv"))
 
 
 if constants.ENABLE_OUT:
@@ -487,8 +452,8 @@ df_train['text'] = df_train['text'].apply(lambda words_list: " <> ".join(words_l
 df_train['parent'] = df_train['parent'].apply(lambda words_list: " <> ".join(words_list))
 df_val = dataset_processing(df_val, del_punctuation)
 
-df_train.to_csv(os.path.join(constants.DATA_PATH, "train_processed.csv"))
-df_val.to_csv(os.path.join(constants.DATA_PATH, "val_processed.csv"))
+df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_processed.csv"))
+df_val.to_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"))
 
 
 # ## Fase di modellazione
