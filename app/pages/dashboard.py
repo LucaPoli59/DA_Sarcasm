@@ -28,22 +28,22 @@ tot_range = {}
 for df_name, df in len_dfs.items():
     len_range[df_name] = df['len'].quantile(np.arange(0, 1.01, 0.01))
     len_range[df_name].index = (len_range[df_name].index.values * 100).round().astype(int)
-    tot_range[df_name] = df['tot'].quantile(np.arange(0, 1.01, 0.01))
-    tot_range[df_name].index = (tot_range[df_name].index.values * 100).round().astype(int)
+    tot_range[df_name] = df['tot'].quantile(np.arange(0, 1.01, 0.01))[::-1]
+    tot_range[df_name].index = ((1 - tot_range[df_name].index.values) * 100).round().astype(int)
 
 layout = dbc.Container(className="fluid", children=[
-    dbc.Row(html.Center(html.H1("Dashboard", className="display-3 my-4"))),
-    dbc.Row([
-        dbc.Col(html.Div([
-                             html.H3("Informazioni generali sul dataset iniziale"),
-                             html.P("Numero di righe: " + str(df_s.shape[0])),
-                             html.P("Numero di righe nulle: " + str(df_s.isna().sum().sum())),
-                             html.P("Numero di righe duplicate: " + str(df_s.duplicated().sum())),
-                             html.H5("Colonne e tipo")] +
-                         [html.P(col + ": " + str(df_s[col].dtype), style={'margin-bottom': '2px'}) for col in
-                          df_s.columns]
-                         ))
-    ]),
+    html.Center(html.H1("Dashboard", className="display-3 my-4")),
+    html.Div(
+        [
+            html.H3("Informazioni generali sul dataset iniziale"),
+            html.P("Numero di righe: " + str(df_s.shape[0])),
+            html.P("Numero di righe nulle: " + str(df_s.isna().sum().sum())),
+            html.P("Numero di righe duplicate: " + str(df_s.duplicated().sum())),
+            html.H5("Colonne e tipo")] +
+        [
+            html.P(col + ": " + str(df_s[col].dtype), style={'margin-bottom': '2px'}) for col in df_s.columns
+        ]
+    ),
     html.Hr(className="my-3"),
     dbc.Row([
         dbc.Col(html.Div([
@@ -59,30 +59,50 @@ layout = dbc.Container(className="fluid", children=[
             dcc.Graph(figure=px.histogram(df_t['sarcastic'],
                                           text_auto=True, histnorm='percent').update_layout(bargap=0.2))
         ]))
-
     ]),
     html.Hr(className="my-5"),
+    html.Center(html.H3("Dataset di training", style={'margin-bottom': '10px'})),
     dbc.Row(dash_table.DataTable(data=df_t.to_dict('records'), page_size=3,
                                  style_data={'whiteSpace': 'normal', 'height': 'auto'})),
     html.Hr(className="my-5"),
-    dbc.Row(dcc.RadioItems(id="feature_len_selector", options={'text': 'Testo', 'parent': 'Parent'}, value='text',
-                           inline=True)),
-    dbc.Row(dcc.Graph(id="len_graph")),
-    dbc.Row(dcc.RangeSlider(id="len_slider", min=0, max=100, step=1, dots=False, value=(50, 100), allowCross=False)),
-    dbc.Row(dcc.RangeSlider(id="tot_slider", min=0, max=100, step=1, dots=False, value=(50, 100), allowCross=False)),
+    dbc.Container(className="d-flex flex-column justify-content-center align-items-center", children=[
+        html.Center(html.H3(id='len_title', children="Distribuzione della lunghezza del testo")),
+        dbc.RadioItems(id="feature_len_selector", options={'text': 'Testo', 'parent': 'Parent'}, value='text',
+                       inline=True, className="date-group-items justify-content-center mt-3"),
+    ]),
+    dcc.Graph(id="len_graph"),
+    dbc.Container(children=[
+        dbc.Label("Lunghezza delle sentenze:"),
+        dcc.RangeSlider(id="len_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
+                        allowCross=False),
+    ]),
+    dbc.Container(className="mt-3", children=[
+        dbc.Label("Numero di campioni per gruppo:"),
+        dcc.RangeSlider(id="tot_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
+                        allowCross=False),
+
+    ]),
+
 ])
 
 
 @callback([Output(component_id='len_slider', component_property='marks'),
            Output(component_id='len_slider', component_property='value'),
            Output(component_id='tot_slider', component_property='marks'),
-           Output(component_id='tot_slider', component_property='value')],
-            [Input(component_id='feature_len_selector', component_property='value')])
+           Output(component_id='tot_slider', component_property='value'),
+           Output(component_id='len_title', component_property='children')],
+          [Input(component_id='feature_len_selector', component_property='value')])
 def update_sliders(ft_s):
     len_slider_marks = {mark: str(round(v)) for mark, v in len_range[ft_s].iloc[::20].items()}
     tot_slider_marks = {mark: str(round(v)) for mark, v in tot_range[ft_s].iloc[::10].items()}
 
-    return len_slider_marks, (0, 50), tot_slider_marks, (50, 100)
+    title = "Distribuzione della lunghezza del "
+    if ft_s == 'text':
+        title += "testo"
+    else:
+        title += "parent"
+
+    return len_slider_marks, (0, 50), tot_slider_marks, (0, 50), title
 
 
 @callback(Output(component_id='len_graph', component_property='figure'),
@@ -92,7 +112,7 @@ def update_sliders(ft_s):
 def update_len_graph(ft_s, len_value, tot_value):
     df_len = len_dfs[ft_s]
     len_value = len_range[ft_s][len_value[0]], len_range[ft_s][len_value[1]]
-    tot_value = tot_range[ft_s][tot_value[0]], tot_range[ft_s][tot_value[1]]
+    tot_value = (tot_range[ft_s][tot_value[0]], tot_range[ft_s][tot_value[1]])[::-1]
 
     return px.bar(df_len.loc[df_len['len'].between(*len_value) & df_len['tot'].between(*tot_value)],
                   x="len", y="prop_s", text_auto=True, hover_data=['prop', 'tot'], range_y=[-0.51, 0.51],
