@@ -82,7 +82,6 @@ layout = dbc.Container(className="fluid", children=[
                         allowCross=False),
 
     ]),
-
 ])
 
 

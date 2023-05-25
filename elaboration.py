@@ -128,7 +128,7 @@ def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
     return df_freq
 
 
-for context_feature in ['subreddit', 'author', 'date']:
+for context_feature in ['subreddit', 'author', 'date', 'parent']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, context_feature]])
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, context_feature + ".csv"))
 
