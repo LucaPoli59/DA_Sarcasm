@@ -3,7 +3,7 @@ from dash import html, dcc
 from dash.dependencies import Input, Output
 
 from app import app
-from pages import context, text, model_training, model_testing, dashboard
+from pages import context, text, model_training, model_testing, dashboard, len_analysis
 from components import navbar, footer
 
 app.layout = html.Div([
@@ -23,6 +23,8 @@ def display_page(pathname):
             return context.layout
         case '/text':
             return text.layout
+        case '/len_analysis':
+            return len_analysis.layout
         case '/model_training':
             return model_training.layout
         case '/model_testing':
