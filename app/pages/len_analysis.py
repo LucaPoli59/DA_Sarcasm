@@ -39,30 +39,30 @@ layout = dbc.Container(className="fluid", children=[
     dcc.Graph(id="len_tot_graph", className="mb-3"),
 
     html.Center(html.H5("Distribuzione Rateo informativo rispetto alla lunghezza delle sentenze")),
-    dcc.Graph(id="info_rate_graph"),
+    dcc.Graph(id="len_info_rate_graph"),
 
     dbc.Container(children=[
         dbc.Label("Numero di parole nelle sentenze:"),
-        dcc.RangeSlider(id="len_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
+        dcc.RangeSlider(id="len_len_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
                         allowCross=False),
     ]),
     dbc.Container(className="mt-3", children=[
         dbc.Label("Numero di campioni per gruppo:"),
-        dcc.RangeSlider(id="tot_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
+        dcc.RangeSlider(id="len_tot_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
                         allowCross=False),
 
     ]),
 ])
 
 
-@callback([Output(component_id='len_slider', component_property='marks'),
-           Output(component_id='len_slider', component_property='value'),
-           Output(component_id='tot_slider', component_property='marks'),
-           Output(component_id='tot_slider', component_property='value'),
+@callback([Output(component_id='len_len_slider', component_property='marks'),
+           Output(component_id='len_len_slider', component_property='value'),
+           Output(component_id='len_tot_slider', component_property='marks'),
+           Output(component_id='len_tot_slider', component_property='value'),
            Output(component_id='len_title', component_property='children'),
            Output(component_id='len_tot_graph', component_property='figure')],
           [Input(component_id='feature_len_selector', component_property='value')])
-def update_sliders_len_tot_graph(ft_s):
+def update_len_sliders_graph(ft_s):
     len_slider_marks = {mark: str(round(v)) for mark, v in len_range[ft_s].iloc[::20].items()}
     tot_slider_marks = {mark: str(round(v)) for mark, v in tot_range[ft_s].iloc[::10].items()}
 
@@ -77,11 +77,11 @@ def update_sliders_len_tot_graph(ft_s):
     return len_slider_marks, (0, 50), tot_slider_marks, (0, 50), title, len_tot_graph
 
 
-@callback(Output(component_id='info_rate_graph', component_property='figure'),
+@callback(Output(component_id='len_info_rate_graph', component_property='figure'),
           [Input(component_id='feature_len_selector', component_property='value'),
-           Input(component_id='len_slider', component_property='value'),
-           Input(component_id='tot_slider', component_property='value')])
-def update_info_rate_graph(ft_s, len_value, tot_value):
+           Input(component_id='len_len_slider', component_property='value'),
+           Input(component_id='len_tot_slider', component_property='value')])
+def update_len_info_rate_graph(ft_s, len_value, tot_value):
     df_len = len_dfs[ft_s]
     len_value = len_range[ft_s][len_value[0]], len_range[ft_s][len_value[1]]
     tot_value = (tot_range[ft_s][tot_value[0]], tot_range[ft_s][tot_value[1]])[::-1]
