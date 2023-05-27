@@ -8,7 +8,7 @@ import os
 import datetime as dt
 
 import constants
-from general_data import df_train, target_info_rate
+from general_data import df_train, target_info_rate, color_scale
 
 
 def compute_unique_sp(df_dict, threshold_list):
@@ -116,7 +116,7 @@ def update_context_info_rate_graph(ft_s, tot_value):
     fig = px.scatter(dataframe, x='element', hover_name='element', range_y=[-1, 52], range_x=[-0.3, 19.3],
                       y="info_rate", hover_data={'prop': True, 'tot': True, 'element': False, 'info_rate': False},
                       labels={'prop': 'Sarcastica (%)', 'info_rate': 'Rateo informativo', 'element': 'Elementi',
-                              'tot': "Numero di testi"}, color_continuous_scale='blackbody', color='prop')
+                              'tot': "Numero di testi"}, color_continuous_scale=color_scale, color='prop')
     fig = fig.update_layout(xaxis=dict(ticktext=dataframe['element'].str.slice(-10), tickvals=dataframe['element']))
 
     return fig

@@ -278,11 +278,6 @@ df_train['text_nsw_st'] = df_train['text_nsw'].apply(
 # Stemming con stopwords
 df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemmer.stem(word) for word in word_list])
 
-train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
-    'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
-
-punctuation_freq.index.name = "index"
-train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
 if constants.ENABLE_OUT:
     print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
@@ -298,13 +293,16 @@ In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, s
 """## Confronto tramite sarcastic value rate
 """
 
-for text_type in ['text_nsw', 'text_nsw_st', 'text_st']:
+for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type))
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "text_" + text_type + ".csv"))
 
     if constants.ENABLE_OUT:
         print("\nAnalisi delle proporzioni sarcastiche per testo di tipo ", text_type, ":\n", sarc_prop.head(5), "\n\n")
 
+train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
+    'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
+train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
 #
 # def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
