@@ -89,4 +89,5 @@ def update_len_info_rate_graph(ft_s, len_value, tot_value):
     return px.bar(df_len.loc[df_len['tot'].between(*tot_value) & df_len['len'].between(*len_value)],
                   x="len", y="info_rate", text_auto=True, hover_data=['prop', 'tot'], range_y=[0, 50],
                   labels={'len': 'Numero di parole nelle sentenze', 'prop': 'Sarcastica (%)',
-                          'info_rate': 'Rateo informativo', 'tot': 'Numero campioni'})
+                          'info_rate': 'Rateo informativo', 'tot': 'Numero campioni'}
+                  ).update_layout(xaxis=dict(rangeslider=dict(visible=True)))  # todo: chiedere quale slider è meglio

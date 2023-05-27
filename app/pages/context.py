@@ -113,9 +113,10 @@ def update_context_info_rate_graph(ft_s, tot_value):
     dataframe = dfs_sp[ft_s]
     dataframe = dataframe.loc[dataframe['tot'].between(*tot_value)]
 
-    return px.scatter(dataframe, x='element', hover_name='element', range_y=[-1, 52], range_x=[-0.3, 19.3],
+    fig = px.scatter(dataframe, x='element', hover_name='element', range_y=[-1, 52], range_x=[-0.3, 19.3],
                       y="info_rate", hover_data={'prop': True, 'tot': True, 'element': False, 'info_rate': False},
                       labels={'prop': 'Sarcastica (%)', 'info_rate': 'Rateo informativo', 'element': 'Elementi',
-                              'tot': "Numero di testi"}, color_continuous_scale='blackbody', color='prop'
-                      ).update_layout(xaxis={'ticktext': dataframe['element'].str.slice(-10),
-                                             'tickvals': dataframe['element']})
+                              'tot': "Numero di testi"}, color_continuous_scale='blackbody', color='prop')
+    fig = fig.update_layout(xaxis=dict(ticktext=dataframe['element'].str.slice(-10), tickvals=dataframe['element']))
+
+    return fig
