@@ -15,7 +15,6 @@ len_dfs = {'text': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text.cs
 
 for df_name, df in len_dfs.items():
     df = df.rename(columns={df.columns[0]: 'len'})
-    df['info_rate'] = abs(df['prop'] - target_info_rate) * 100
     df['prop'] = round(df['prop'] * 100, 0)
     len_dfs[df_name] = df.loc[abs(zscore(df['len']) < 3)]
 

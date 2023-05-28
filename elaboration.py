@@ -29,8 +29,10 @@ import matplotlib.pyplot as plt
 from keras import metrics, losses, layers, activations, models, callbacks, utils, initializers, Input
 import numpy as np
 from wordcloud import WordCloud
+from plotly.express.colors import sample_colorscale
 import os
 import constants
+import json
 
 
 
@@ -95,7 +97,7 @@ def dataset_opening_preprocessing(dataframe):
 df_train = dataset_opening_preprocessing(df_train)
 df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"))
 
-sarcastic_prop = df_train[constants.TARGET].value_counts()
+target_info_rate = df_train['sarcastic'].value_counts(normalize=True).max()
 
 if constants.ENABLE_OUT:
     print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
@@ -104,14 +106,14 @@ if constants.ENABLE_OUT:
           df_train.loc[df_train[constants.TARGET] == 1].head(3)[[constants.TARGET, 'text']], "\n")
     print("Stampa di 3 righe non sarcastiche:\n",
           df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
-    print("Distribuzione del target:")
-    print(sarcastic_prop / df_train.shape[0] * 100)
+    print("Distribuzione del target:", round(target_info_rate * 100, 2))
 
 
-def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
+def sarcastic_proportion_count(df: pd.DataFrame, target_rate: float) -> pd.DataFrame:
     """
     Calcola la proporzione di sarcastic e non sarcastic delle feature uniche della colonna feature
     :param df: dataset contenente il target sarcastic e la feature
+    :param target_rate: proporzione di sarcastic nel dataset
     :return: dataframe contenete per ogni feature unica, la sua frequenza e proporzione
     """
 
@@ -122,14 +124,15 @@ def sarcastic_proportion_count(df: pd.DataFrame) -> pd.DataFrame:
     df_freq = pd.DataFrame({'sarc_freq': sc_vc, 'n_sarc_freq': nsc_vc}).fillna(0)
     df_freq['tot'] = df_freq['sarc_freq'] + df_freq['n_sarc_freq']
     df_freq['prop'] = df_freq['sarc_freq'] / df_freq['tot']
+    df_freq['info_rate'] = abs(df_freq['prop'] - target_rate) * 100
 
     df_freq.index.name = "element"
-    df_freq = df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
+    df_freq = df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq', 'info_rate']]
     return df_freq
 
 
 for context_feature in ['subreddit', 'author', 'date', 'parent']:
-    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, context_feature]])
+    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, context_feature]], target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, context_feature + ".csv"))
 
     if constants.ENABLE_OUT:
@@ -139,7 +142,7 @@ df_train_len = df_train[['sarcastic', 'text', 'parent']].copy()
 df_train_len[['text', 'parent']] = df_train_len[['text', 'parent']].applymap(lambda x: len(x.split()))
 
 for feature in ['text', 'parent']:
-    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]])
+    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]], target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_" + feature + ".csv"))
 
     if constants.ENABLE_OUT:
@@ -158,52 +161,36 @@ Producendo tre tipi di testo:
 - nsw_st: senza stopwords e con stemming;
 - st: con stemming.
 che verranno poi confrontati nella successiva analisi
-
-Si definiscono due funzioni generiche a tal proposito:
 """
 
 
-def values_count_from_list(series, normalize=False):
+def word_cloud_generator(df_sp, save_name):
     """
-    Funzione che prende una serie che contiene liste, e restituisce gli elementi più comuni
-    :param series: serie d'input
-    :type series: pd.Series
-    :param normalize: parametro per attivare la normalizzazione
-    :type normalize: bool
-    :return: Serie di value count
-    :rtype: pd.Series
+    Funzione che genera la wordcloud di una serie di frequenza di parole,
+    i cui colori sono in accordo con la color scale e dipendono dall'info_rate
+    :param df_sp: dataframe contenente la sarcastic proportion di una feature
+    :type df_sp: pd.DataFrame
+    :param save_name: nome del file di salvataggio
+    :type save_name: str
+    :return: wordcloud generata
+    :rtype: WordCloud
     """
+    color_map = df_sp['info_rate'].to_frame().reset_index()
+    # color_map = df_sp['info_rate'].to_frame().reset_index().sort_values(by='info_rate')
+    info_min, info_max = color_map['info_rate'].min(), color_map['info_rate'].max()
+    color_map['rate_s'] = (color_map['info_rate'] - info_min) / (info_max - info_min)
+    color_map['color'] = sample_colorscale(constants.COLOR_SCALE, color_map['rate_s'])
 
-    series_exploded = series.explode()
-    return round(series_exploded.value_counts(normalize=normalize), 5)
+    color_dict = color_map.set_index('element')['color']
 
+    wc = WordCloud(width=1600, height=800, background_color='white',
+                   color_func=lambda *args, **kwargs: color_dict[args[0]]
+                   ).generate_from_frequencies(df_sp['tot'].to_dict())
 
-def print_plot_most_common_token(series, num_print=10, num_plot=20,
-                                 text_print="Frequenza nel testo dei token più comuni:",
-                                 title_plot="Frequenza nel testo dei token più comuni"):
-    """
-    Funzione che stampa e plotta i token più comuni in una serie contente i token
-    :param series: serie d'input
-    :type series: pd.Series
-    :param num_print: numero di token da stampare
-    :type num_print: int
-    :param num_plot: numero di token da usare nei plot
-    :type num_plot: int
-    :param text_print: testo da stampare a schermo
-    :type text_print: str
-    :param title_plot: titolo del plot
-    :type title_plot: str
-    :return: serie dei token più comune
-    :rtype pd.Series
-    """
-    common_tokens = values_count_from_list(series, normalize=True)
-    print("\n", text_print, "\n", common_tokens.head(num_print), "\n\n")
-    fig, ax = plt.subplots()
-    (common_tokens.head(num_plot) * 100).plot(kind='bar', title=title_plot, xlabel="Token", ylabel="Frequenza %")
-    fig, ax = plt.subplots()
-    plt.imshow(WordCloud(width=1600, height=800,
-                         background_color="black").generate_from_frequencies(dict(common_tokens.to_dict())),
-               interpolation='antialiased')
+    with open(os.path.join(constants.DATA_WC_PATH, save_name + ".json"), 'w') as json_file:
+        json.dump(wc.to_array().tolist(), json_file)
+
+    return wc
 
 
 """Si procede con la tokenizzazione del testo"""
@@ -214,8 +201,6 @@ df_train['text_tokenized'] = df_train['text'].apply(lambda x: tweet_tokenizer.to
 
 if constants.ENABLE_OUT:
     print("stampa di tre frasi con i relativi token:\n", df_train[['text', 'text_tokenized']].head(3), "\n\n")
-    print_plot_most_common_token(df_train['text_tokenized'])
-    plt.show()
 
 """Prima di eliminare la punteggiatura, si esamina la frequenza dei simboli in frasi sarcastiche e non, in quanto essi possono essere fonte d'informazione."""
 
@@ -231,11 +216,13 @@ for mark in punctuation_freq.index:
 
 punctuation_freq['tot'] = punctuation_freq['sarc_freq'] + punctuation_freq['n_sarc_freq']
 punctuation_freq['prop'] = punctuation_freq['sarc_freq'] / punctuation_freq['tot']
+punctuation_freq['info_rate'] = abs(punctuation_freq['prop'] - target_info_rate) * 100
 punctuation_freq = punctuation_freq.dropna()
-punctuation_freq = punctuation_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq']]
+punctuation_freq = punctuation_freq.sort_values(by='tot', ascending=False)
 
 punctuation_freq.index.name = "element"
 punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "punctuation.csv"))
+word_cloud_generator(punctuation_freq, "punctuation")
 
 if constants.ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
@@ -252,21 +239,12 @@ del_punctuation = [point for point in list(all_punctuation) if point not in outl
 df_train['text_tokenized'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in del_punctuation])
 
-if constants.ENABLE_OUT:
-    print("I punti mantenuti sono:\t", outlier_punctuation)
-    print_plot_most_common_token(df_train['text_tokenized'], text_print="Dopo la rimozione della punteggiatura:",
-                                 title_plot="Dopo la rimozione della punteggiatura")
-    plt.show()
 
 """Si procede con l'eliminazione delle stopwords"""
 
 df_train['text_nsw'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
 
-if constants.ENABLE_OUT:
-    print_plot_most_common_token(df_train['text_nsw'], text_print="Dopo la rimozione delle stopword:",
-                                 title_plot="Dopo la rimozione delle stopword")
-    plt.show()
 
 """Si termina la fase con lo stemming"""
 
@@ -279,11 +257,6 @@ df_train['text_nsw_st'] = df_train['text_nsw'].apply(
 df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemmer.stem(word) for word in word_list])
 
 
-if constants.ENABLE_OUT:
-    print_plot_most_common_token(df_train['text_nsw_st'], text_print="Dopo la rimozione delle stopword e stemming:",
-                                 title_plot="Dopo la rimozione delle stopword e stemming")
-    print_plot_most_common_token(df_train['text_st'], text_print="Dopo lo stemming:", title_plot="Dopo lo stemming")
-    plt.show()
 
 """## Confronto dei tipi di testo
 In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, st), in modo da individuare quale di essi porta più informazioni.
@@ -294,8 +267,10 @@ In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, s
 """
 
 for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
-    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type))
+    sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type),
+                                           target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "text_" + text_type + ".csv"))
+    word_cloud_generator(sarc_prop, "text_" + text_type)
 
     if constants.ENABLE_OUT:
         print("\nAnalisi delle proporzioni sarcastiche per testo di tipo ", text_type, ":\n", sarc_prop.head(5), "\n\n")

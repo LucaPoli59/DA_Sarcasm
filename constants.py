@@ -1,4 +1,5 @@
 import os
+import plotly.express as px
 
 
 PROJECT_NAME = "data_analytics"
@@ -21,7 +22,13 @@ DATA_SP_PATH = os.path.join(DATA_OUT_PATH, "sp")
 if not os.path.exists(DATA_SP_PATH):
     os.mkdir(DATA_SP_PATH)
 
+DATA_WC_PATH = os.path.join(DATA_SP_PATH, "wc")
+if not os.path.exists(DATA_WC_PATH):
+    os.mkdir(DATA_WC_PATH)
+
 ENABLE_OUT = False
 TARGET = 'sarcastic'
 CONTEXT_COLS = ['author', 'subreddit', 'parent']
 EMBEDDING_DIM = 300
+
+COLOR_SCALE = px.colors.sequential.Turbo_r
