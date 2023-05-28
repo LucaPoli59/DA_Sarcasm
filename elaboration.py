@@ -221,8 +221,8 @@ punctuation_freq = punctuation_freq.dropna()
 punctuation_freq = punctuation_freq.sort_values(by='tot', ascending=False)
 
 punctuation_freq.index.name = "element"
-punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "punctuation.csv"))
-word_cloud_generator(punctuation_freq, "punctuation")
+punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "text_punctuation.csv"))
+word_cloud_generator(punctuation_freq, "text_punctuation")
 
 if constants.ENABLE_OUT:
     print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
@@ -269,8 +269,8 @@ In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, s
 for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type),
                                            target_info_rate)
-    sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "text_" + text_type + ".csv"))
-    word_cloud_generator(sarc_prop, "text_" + text_type)
+    sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, text_type + ".csv"))
+    word_cloud_generator(sarc_prop, text_type)
 
     if constants.ENABLE_OUT:
         print("\nAnalisi delle proporzioni sarcastiche per testo di tipo ", text_type, ":\n", sarc_prop.head(5), "\n\n")
