@@ -44,7 +44,8 @@ for name in selector_options.keys():
                      range_x=[-0.3, 9.3], range_y=[0, df['tot_s'].max() + 0.1], hover_name='element',
                      hover_data={'tot': True, 'tot_s': False, 'info_rate': True, 'element': False, 'prop': True},
                      labels={'element': 'Parola', 'tot_s': 'Numero di campioni (%)', 'prop': 'Sarcastica (%)',
-                             'tot': 'Numero di campioni', 'info_rate': 'Rateo informativo'})
+                             'tot': 'Numero di campioni', 'info_rate': 'Rateo informativo'}
+                     )
 
     hist_fig = px.histogram(df, x='tot', y='info_rate', histfunc='avg', nbins=100, marginal='rug',
                             hover_data=['tot', 'tot_s', 'info_rate'],
@@ -72,17 +73,17 @@ layout = dbc.Container(className="fluid", children=[
     ]),
 
     dcc.Tabs(value='wc_bar', children=[
-            dcc.Tab(label='Word Cloud', children=dcc.Graph(id='text_info_rate_graph_wc')),
-            dcc.Tab(label='Grafo a barre', children=dcc.Graph(id='text_info_rate_graph_bar')),
-            dcc.Tab(label='Entrambi', value='wc_bar', children=[
-                dbc.Row([
+        dcc.Tab(label='Entrambi', value='wc_bar', children=[
+            dcc.Loading(type="circle", children=dbc.Row([
                     dbc.Col(dcc.Graph(id='text_info_rate_graphs_wc'), className="col-sm-6"),
                     dbc.Col(dcc.Graph(id='text_info_rate_graphs_bar'), className="col-sm-6")
-                ])
-            ]),
-        ], className="justify-content-center align-items-center"),
+                ]))
+        ]),
+        dcc.Tab(label='Word Cloud', children=dcc.Loading(dcc.Graph(id='text_info_rate_graph_wc'), type="circle")),
+        dcc.Tab(label='Grafo a barre', children=dcc.Loading(dcc.Graph(id='text_info_rate_graph_bar'), type="circle")),
+    ], className="justify-content-center align-items-center my-5"),
 
-    dcc.Graph(id="text_info_rate_hist_graph")
+    dcc.Loading(dcc.Graph(id="text_info_rate_hist_graph"), type="circle")
 ])
 
 
