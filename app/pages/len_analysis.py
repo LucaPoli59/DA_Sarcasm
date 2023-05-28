@@ -18,11 +18,8 @@ for df_name, df in len_dfs.items():
     df['prop'] = round(df['prop'] * 100, 0)
     len_dfs[df_name] = df.loc[abs(zscore(df['len']) < 3)]
 
-len_range = {}
 tot_range = {}
 for df_name, df in len_dfs.items():
-    len_range[df_name] = df['len'].quantile(np.arange(0, 1.01, 0.01))
-    len_range[df_name].index = (len_range[df_name].index.values * 100).round().astype(int)
     tot_range[df_name] = df['tot'].quantile(np.arange(0, 1.01, 0.01))[::-1]
     tot_range[df_name].index = ((1 - tot_range[df_name].index.values) * 100).round().astype(int)
 
@@ -40,11 +37,6 @@ layout = dbc.Container(className="fluid", children=[
     html.Center(html.H5("Distribuzione Rateo informativo rispetto alla lunghezza delle sentenze")),
     dcc.Graph(id="len_info_rate_graph"),
 
-    dbc.Container(children=[
-        dbc.Label("Numero di parole nelle sentenze:"),
-        dcc.RangeSlider(id="len_len_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
-                        allowCross=False),
-    ]),
     dbc.Container(className="mt-3", children=[
         dbc.Label("Numero di campioni per gruppo:"),
         dcc.RangeSlider(id="len_tot_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
@@ -54,15 +46,12 @@ layout = dbc.Container(className="fluid", children=[
 ])
 
 
-@callback([Output(component_id='len_len_slider', component_property='marks'),
-           Output(component_id='len_len_slider', component_property='value'),
-           Output(component_id='len_tot_slider', component_property='marks'),
+@callback([Output(component_id='len_tot_slider', component_property='marks'),
            Output(component_id='len_tot_slider', component_property='value'),
            Output(component_id='len_title', component_property='children'),
            Output(component_id='len_tot_graph', component_property='figure')],
           [Input(component_id='feature_len_selector', component_property='value')])
 def update_len_sliders_graph(ft_s):
-    len_slider_marks = {mark: str(round(v)) for mark, v in len_range[ft_s].iloc[::20].items()}
     tot_slider_marks = {mark: str(round(v)) for mark, v in tot_range[ft_s].iloc[::10].items()}
 
     title = "Distribuzione della lunghezza del "
@@ -73,20 +62,18 @@ def update_len_sliders_graph(ft_s):
 
     len_tot_graph = px.box(len_frequency[ft_s], x='len', labels={'len': 'Numero di parole nelle sentenze'})
 
-    return len_slider_marks, (0, 50), tot_slider_marks, (0, 50), title, len_tot_graph
+    return tot_slider_marks, (0, 50), title, len_tot_graph
 
 
 @callback(Output(component_id='len_info_rate_graph', component_property='figure'),
           [Input(component_id='feature_len_selector', component_property='value'),
-           Input(component_id='len_len_slider', component_property='value'),
            Input(component_id='len_tot_slider', component_property='value')])
-def update_len_info_rate_graph(ft_s, len_value, tot_value):
+def update_len_info_rate_graph(ft_s, tot_value):
     df_len = len_dfs[ft_s]
-    len_value = len_range[ft_s][len_value[0]], len_range[ft_s][len_value[1]]
     tot_value = (tot_range[ft_s][tot_value[0]], tot_range[ft_s][tot_value[1]])[::-1]
 
-    return px.bar(df_len.loc[df_len['tot'].between(*tot_value) & df_len['len'].between(*len_value)],
-                  x="len", y="info_rate", text_auto=True, hover_data=['prop', 'tot'], range_y=[0, 50],
+    return px.bar(df_len.loc[df_len['tot'].between(*tot_value) & df_len['len']],
+                  x="len", y="info_rate", text_auto=True, hover_data=['prop', 'tot'], range_y=[0, 51],
                   labels={'len': 'Numero di parole nelle sentenze', 'prop': 'Sarcastica (%)',
                           'info_rate': 'Rateo informativo', 'tot': 'Numero campioni'}
-                  ).update_layout(xaxis=dict(rangeslider=dict(visible=True)))  # todo: chiedere quale slider è meglio
+                  ).update_layout(xaxis=dict(rangeslider=dict(visible=True)))
