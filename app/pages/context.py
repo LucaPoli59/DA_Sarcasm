@@ -6,6 +6,7 @@ import numpy as np
 from scipy.stats import zscore
 import os
 import datetime as dt
+from dash_ag_grid import AgGrid
 
 import constants
 from general_data import df_train, target_info_rate
@@ -42,9 +43,21 @@ dfs_sp = {'author': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "author.csv
 for df_name in dfs_sp.keys():
     dfs_sp[df_name] = dfs_sp[df_name].loc[dfs_sp[df_name]['tot'] > 1]
     dfs_sp[df_name] = dfs_sp[df_name].sort_values(by='tot', ascending=False).reset_index()
+    dfs_sp[df_name]['tot_s'] = dfs_sp[df_name]['tot'] / dfs_sp[df_name]['tot'].sum() * 100
     dfs_sp[df_name]['prop'] = round(dfs_sp[df_name]['prop'] * 100)
 
 dfs_sp['date']['element'] = pd.to_datetime(dfs_sp['date']['element']).apply(lambda x: x.strftime("%d-%m-%Y"))
+
+sp_cols_to_grid = {'element': 'Elemento', 'tot_s': 'Frequenza %', 'tot': 'Frequenza',
+                   'prop': 'Proporzione sarcastica %', 'info_rate': 'Rateo informativo'}
+
+sp_grids = {name: AgGrid(
+    rowData=dfs_sp[name][list(sp_cols_to_grid.keys())].to_dict('records'),
+    columnDefs=[{'field': col, 'headerName': sp_cols_to_grid[col]} for col, col_name in sp_cols_to_grid.items()],
+    defaultColDef={"resizable": True, "sortable": True, "filter": True, "minWidth": 125,
+                   "wrapText": True, 'autoHeight': True},
+    columnSize='sizeToFit',
+) for name in dfs_sp.keys()}
 
 
 unique_stats = compute_unique_sp(dfs_sp, np.arange(0, 50, 10))
@@ -72,12 +85,13 @@ layout = dbc.Container(className="fluid", children=[
                        value='author', className="date-group-items justify-content-center mt-4"),
     ]),
     dcc.Graph(id="context_info_rate_graph"),
-    dbc.Container(className="mt-3", children=[
+    dbc.Container(className="my-4", children=[
         dbc.Label("Numero di testi associati all'elemento:"),
         dcc.RangeSlider(id="context_tot_slider", min=0, max=100, dots=False, value=(0, 100), className="mt-1",
                         allowCross=False, tooltip={'always_visible': False, 'placement': 'top'}),
 
     ]),
+    html.Div(children=[sp_grids['author']], id="context_info_rate_grid"),
 
 ])
 
@@ -85,7 +99,8 @@ layout = dbc.Container(className="fluid", children=[
 @callback([Output(component_id='context_tot_slider', component_property='min'),
            Output(component_id='context_tot_slider', component_property='max'),
            Output(component_id='context_tot_slider', component_property='value'),
-           Output(component_id='context_info_rate_title', component_property='children')],
+           Output(component_id='context_info_rate_title', component_property='children'),
+           Output(component_id='context_info_rate_grid', component_property='children'),],
           [Input(component_id='context_info_rate_selector', component_property='value')])
 def update_context_slider_graph(ft_s):
 
@@ -102,7 +117,7 @@ def update_context_slider_graph(ft_s):
 
     range_min, range_max = dfs_sp[ft_s]['tot'].min(), dfs_sp[ft_s]['tot'].max()
 
-    return range_min, range_max, (range_min, range_max), title
+    return range_min, range_max, (range_min, range_max), title, sp_grids[ft_s]
 
 
 @callback(Output(component_id='context_info_rate_graph', component_property='figure'),
@@ -112,10 +127,11 @@ def update_context_info_rate_graph(ft_s, tot_value):
     dataframe = dfs_sp[ft_s]
     dataframe = dataframe.loc[dataframe['tot'].between(*tot_value)]
 
-    fig = px.scatter(dataframe, x='element', hover_name='element', range_y=[-1, 52], range_x=[-0.3, 19.3],
-                      y="info_rate", hover_data={'prop': True, 'tot': True, 'element': False, 'info_rate': False},
+    fig = px.scatter(dataframe, x='element', hover_name='element', range_y=[-1, 52], range_x=[-0.3, 19.3], color='prop',
+                      y="info_rate", hover_data={'prop': True, 'tot': True, 'tot_s': True, 'element': False,
+                                                 'info_rate': False}, color_continuous_scale=constants.COLOR_SCALE,
                       labels={'prop': 'Sarcastica (%)', 'info_rate': 'Rateo informativo', 'element': 'Elementi',
-                              'tot': "Numero di testi"}, color_continuous_scale=constants.COLOR_SCALE, color='prop')
+                              'tot': "Numero di testi", 'tot_s': "Numero di testi (%)"})
     fig = fig.update_layout(xaxis=dict(ticktext=dataframe['element'].str.slice(-10), tickvals=dataframe['element']))
 
     return fig
