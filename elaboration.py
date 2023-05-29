@@ -277,6 +277,8 @@ for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
 
 train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
     'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')
+
+train_text = train_text.applymap(lambda x: " ".join(x))
 train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
 #
