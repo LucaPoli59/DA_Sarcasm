@@ -74,28 +74,31 @@ layout = dbc.Container(className="fluid", children=[
 
     dcc.Tabs(value='wc_bar', children=[
         dcc.Tab(label='Entrambi', value='wc_bar', children=[
-            dcc.Loading(type="circle", children=dbc.Row([
+            dcc.Loading(type="circle", children=[
+                dbc.Row([
                     dbc.Col(dcc.Graph(id='text_info_rate_graphs_wc'), className="col-sm-6"),
                     dbc.Col(dcc.Graph(id='text_info_rate_graphs_bar'), className="col-sm-6")
-                ]))
+                ]), dcc.Graph(id="text_info_rate_hist_graph_t1")
+            ])
         ]),
-        dcc.Tab(label='Word Cloud', children=dcc.Loading(dcc.Graph(id='text_info_rate_graph_wc'), type="circle")),
-        dcc.Tab(label='Grafo a barre', children=dcc.Loading(dcc.Graph(id='text_info_rate_graph_bar'), type="circle")),
+        dcc.Tab(label='Word Cloud', children=dcc.Loading(type="circle", children=[
+            dcc.Graph(id='text_info_rate_graph_wc'), dcc.Graph(id="text_info_rate_hist_graph_t2")])),
+        dcc.Tab(label='Grafo a barre', children=dcc.Loading(type="circle", children=[
+            dcc.Graph(id='text_info_rate_graph_bar'), dcc.Graph(id="text_info_rate_hist_graph_t3")])),
     ], className="justify-content-center align-items-center my-5"),
 
-    dcc.Loading(dcc.Graph(id="text_info_rate_hist_graph"), type="circle")
 ])
 
 
-@callback([Output(component_id="text_info_rate_graph_wc", component_property="figure"),
-           Output(component_id="text_info_rate_graph_bar", component_property="figure"),
-           Output(component_id="text_info_rate_graphs_wc", component_property="figure"),
-           Output(component_id="text_info_rate_graphs_bar", component_property="figure"),
-           Output(component_id="text_info_rate_hist_graph", component_property="figure")],
-          [Input(component_id="text_info_rate_text_selector", component_property="value")])
+@callback([Output("text_info_rate_graphs_wc", "figure"),
+           Output("text_info_rate_graphs_bar", "figure"),
+           Output("text_info_rate_graph_wc", "figure"),
+           Output("text_info_rate_graph_bar", "figure")] +
+           [Output("text_info_rate_hist_graph_t" + str(i), "figure") for i in range(1, 4)],
+          [Input("text_info_rate_text_selector", "value")])
 def update_info_rate_graphs(text_selector):
     graphs = info_rate_graphs_dict[text_selector]
 
-    return go.Figure(data=list(graphs['wc'].values()), layout=wc_layout), graphs['bar'],\
-           go.Figure(data=graphs['wc']['img'], layout=wc_layout), graphs['bar'],\
-           graphs['hist']
+    return go.Figure(data=graphs['wc']['img'], layout=wc_layout), graphs['bar'], \
+           go.Figure(data=list(graphs['wc'].values()), layout=wc_layout), \
+           graphs['bar'].update_layout(xaxis=dict(range=[-0.3, 29.3])), *[graphs['hist']] * 3
