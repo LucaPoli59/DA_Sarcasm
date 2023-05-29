@@ -12,8 +12,8 @@ import timeit
 import constants
 from general_data import df_full, df_train
 
-cols_to_grid = {'sarcastic': 'Sarcastico', 'text': 'Testo', 'author': 'Autore', 'subreddit': 'Subreddit',
-                'parent': 'Parent'}
+cols_to_grid = {'sarcastic': 'Sarcastico', 'text': 'Testo', 'author': 'Autore', 'date': 'Data',
+                'subreddit': 'Subreddit', 'parent': 'Parent'}
 
 ag_grid = AgGrid(
     rowData=df_train[list(cols_to_grid.keys())].to_dict('records'),
