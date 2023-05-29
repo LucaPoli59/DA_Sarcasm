@@ -2,6 +2,7 @@ from dash import html, dash_table, dcc, callback, Input, Output
 from plotly.subplots import make_subplots
 import plotly.express as px
 import dash_bootstrap_components as dbc
+from dash_ag_grid import AgGrid
 import pandas as pd
 import numpy as np
 from scipy.stats import zscore
@@ -10,6 +11,17 @@ import timeit
 
 import constants
 from general_data import df_full, df_train
+
+cols_to_grid = {'sarcastic': 'Sarcastico', 'text': 'Testo', 'author': 'Autore', 'subreddit': 'Subreddit',
+                'parent': 'Parent'}
+
+ag_grid = AgGrid(
+    rowData=df_train[list(cols_to_grid.keys())].to_dict('records'),
+    columnDefs=[{'field': col, 'headerName': cols_to_grid[col]} for col, col_name in cols_to_grid.items()],
+    defaultColDef={"resizable": True, "sortable": True, "filter": True, "minWidth": 125,
+                   "wrapText": True, 'autoHeight': True},
+    columnSize='sizeToFit',
+)
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Dashboard", className="display-3 my-4")),
@@ -41,7 +53,6 @@ layout = dbc.Container(className="fluid", children=[
         ]))
     ]),
     html.Hr(className="my-5"),
-    html.Center(html.H3("Dataset di training", style={'margin-bottom': '10px'})),
-    dbc.Row(dash_table.DataTable(data=df_train.to_dict('records'), page_size=3,
-                                 style_data={'whiteSpace': 'normal', 'height': 'auto'})),
+    html.Center(html.H3("Dataset di training")),
+    html.Div(className="my-4", children=ag_grid),
 ])
