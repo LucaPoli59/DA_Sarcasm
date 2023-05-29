@@ -21,22 +21,24 @@ def get_wc_fig(wc, info_rate):
     return {'img': go.Image(z=wc), 'color_bar': dummy_scatter}
 
 
-start = timeit.default_timer()
-
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}
 
 dfs_sp = {name: pd.read_csv(os.path.join(constants.DATA_SP_PATH, "text_" + name + ".csv"), index_col="element")
           for name in selector_options.keys()}
-dfs_info_avg = pd.Series(index=selector_options.keys(), name='info_rate_avg', dtype=float)
 df_texts = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"), index_col="index")
 
 for name in dfs_sp.keys():
     dfs_sp[name]['tot_s'] = dfs_sp[name]['tot'] / dfs_sp[name]['tot'].sum() * 100
     dfs_sp[name]['prop'] = round(dfs_sp[name]['prop'] * 100)
-    dfs_info_avg[name] = np.average(dfs_sp[name]['info_rate'].values, weights=dfs_sp[name]['tot_s'].values)
 
-dfs_info_avg = dfs_info_avg.drop('punctuation')
+
+dfs_info_stats = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'), columns=['avg', 'std']).drop('punctuation')
+dfs_info_stats['avg'] = [np.average(dfs_sp[name]['info_rate'].values, weights=dfs_sp[name]['tot_s'].values)
+                         for name in dfs_info_stats.index]
+dfs_info_stats['std'] = [np.sqrt(np.cov(dfs_sp[name]['info_rate'].values, aweights=dfs_sp[name]['tot_s'].values))
+                         for name in dfs_info_stats.index]
+
 
 sp_cols_to_grid = {'element': 'Testo', 'tot_s': 'Frequenza %', 'tot': 'Frequenza', 'prop': 'Proporzione sarcastica %',
                    'info_rate': 'Rateo informativo'}
@@ -75,9 +77,6 @@ for name in selector_options.keys():
 
 wc_layout = go.Layout(margin={"t": 20, "b": 0, "r": 0, "l": 0, "pad": 0}, xaxis={"visible": False},
                       yaxis={"visible": False}, hovermode=False)
-
-end = timeit.default_timer()
-print("Tempo di caricamento: ", end - start)
 
 
 @callback([Output("text_info_rate_graph_wc", "figure"), Output("text_info_rate_graph_bar", "figure"),
@@ -128,8 +127,8 @@ layout = dbc.Container(className="fluid", children=[
 
     html.Hr(className="my-5"),
     html.Center(html.H3("Rateo informativo medio")),
-    dcc.Graph(figure=px.bar(dfs_info_avg.rename(selector_options).reset_index(), x='index', y='info_rate_avg',
-                            labels={'index': 'Tipo di testo', 'info_rate_avg': 'Rateo informativo medio'})),
+    dcc.Graph(figure=px.bar(dfs_info_stats.rename(selector_options), orientation='v', barmode='group',
+                            labels={'value': 'Rateo informativo', 'feature': 'Tipo di testo'})),
     html.Hr(className="my-5"),
     dbc.Container(className="border border-secondary", children=[
         dbc.Container(className="d-flex flex-column justify-content-center align-items-center mt-3", children=[

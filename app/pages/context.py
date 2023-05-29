@@ -30,8 +30,7 @@ def compute_unique_sp(df_dict, threshold_list):
             feature.index.values)
         ))
     ris = ris.iloc[1:] / ris.iloc[0] * 100
-    ris.index.name, ris.columns.name = "Threshold", "Feature"
-
+    ris.index.name, ris.columns.name = "Threshold (%)", "Feature"
     return ris
 
 
@@ -61,6 +60,11 @@ sp_grids = {name: AgGrid(
 
 
 unique_stats = compute_unique_sp(dfs_sp, np.arange(0, 50, 10))
+dfs_info_stats = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'), columns=['avg', 'std'])
+dfs_info_stats['avg'] = [np.average(df['info_rate'].values, weights=df['tot_s'].values) for df in dfs_sp.values()]
+dfs_info_stats['std'] = [np.sqrt(np.cov(df['info_rate'].values, aweights=df['tot_s'].values)) for df in dfs_sp.values()]
+
+
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Context Exploring", className="display-3 my-4")),
@@ -72,9 +76,14 @@ layout = dbc.Container(className="fluid", children=[
              for feature, df in dfs_sp.items()], class_name="mx-2"),
 
     html.Hr(className="my-3"),
-    html.Center(html.H5("Distribuzione delle feature del contesto rispetto al numero di testi per ogni feature unica")),
+    html.Center(html.H4("Analisi del rateo informativo generale degli elementi unici del contesto")),
     dcc.Graph(figure=px.bar(unique_stats.transpose(), barmode='group',
                             labels={'value': 'Percentuale di elementi unici'})),
+
+    html.Center(html.H5("Statistiche pesate sulle frequenze degli elementi unici")),
+    dcc.Graph(figure=px.bar(dfs_info_stats.rename(
+        {'author': 'Autore', 'parent': 'Parent', 'date': 'Data', 'subreddit': 'Subreddit'}),
+        orientation='v', barmode='group', labels={'value': 'Rateo informativo', 'feature': 'Tipo di contesto'})),
 
     html.Hr(className="my-4"),
     dbc.Container(className="d-flex flex-column justify-content-center align-items-center my-5", children=[
