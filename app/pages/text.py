@@ -32,13 +32,11 @@ for name in dfs_sp.keys():
     dfs_sp[name]['tot_s'] = dfs_sp[name]['tot'] / dfs_sp[name]['tot'].sum() * 100
     dfs_sp[name]['prop'] = round(dfs_sp[name]['prop'] * 100)
 
-
 dfs_info_stats = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'), columns=['avg', 'std']).drop('punctuation')
 dfs_info_stats['avg'] = [np.average(dfs_sp[name]['info_rate'].values, weights=dfs_sp[name]['tot_s'].values)
                          for name in dfs_info_stats.index]
 dfs_info_stats['std'] = [np.sqrt(np.cov(dfs_sp[name]['info_rate'].values, aweights=dfs_sp[name]['tot_s'].values))
                          for name in dfs_info_stats.index]
-
 
 sp_cols_to_grid = {'element': 'Testo', 'tot_s': 'Frequenza %', 'tot': 'Frequenza', 'prop': 'Proporzione sarcastica %',
                    'info_rate': 'Rateo informativo'}
@@ -79,8 +77,8 @@ wc_layout = go.Layout(margin={"t": 20, "b": 0, "r": 0, "l": 0, "pad": 0}, xaxis=
                       yaxis={"visible": False}, hovermode=False)
 
 
-@callback([Output("text_info_rate_graph_wc", "figure"), Output("text_info_rate_graph_bar", "figure"),
-           Output("text_info_rate_graphs_wc", "figure"), Output("text_info_rate_graphs_bar", "figure")],
+@callback([Output("text_info_rate_graph_wc", "figure"), Output("text_info_rate_graphs_wc", "figure"),
+           Output("text_info_rate_graph_bar", "figure"), Output("text_info_rate_graphs_bar", "figure")],
           [Input("text_info_rate_text_selector", "value")],
           prevent_initial_call=True)
 def update_info_rate_graphs(text_selector):
