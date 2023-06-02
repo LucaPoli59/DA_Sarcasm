@@ -118,15 +118,18 @@ def sarcastic_proportion_count(df: pd.DataFrame, target_rate: float) -> pd.DataF
     """
 
     sc_rows = df[constants.TARGET] == 1
-    sc_vc = df.loc[sc_rows, df.columns[-1]].value_counts()
-    nsc_vc = df.loc[~sc_rows, df.columns[-1]].value_counts()
+    sc_vc = df.loc[sc_rows, df.columns[1:]].value_counts()
+    nsc_vc = df.loc[~sc_rows, df.columns[1:]].value_counts()
 
     df_freq = pd.DataFrame({'sarc_freq': sc_vc, 'n_sarc_freq': nsc_vc}).fillna(0)
     df_freq['tot'] = df_freq['sarc_freq'] + df_freq['n_sarc_freq']
     df_freq['prop'] = df_freq['sarc_freq'] / df_freq['tot']
     df_freq['info_rate'] = abs(df_freq['prop'] - target_rate) * 100
 
-    df_freq.index.name = "element"
+    if len(df_freq.index.names) == 1:
+        df_freq.index = df_freq.index.get_level_values(0)
+        df_freq.index.name = "element"
+
     df_freq = df_freq.sort_values(by='tot', ascending=False)[['tot', 'prop', 'sarc_freq', 'n_sarc_freq', 'info_rate']]
     return df_freq
 
@@ -141,12 +144,19 @@ for context_feature in ['subreddit', 'author', 'date', 'parent']:
 df_train_len = df_train[['sarcastic', 'text', 'parent']].copy()
 df_train_len[['text', 'parent']] = df_train_len[['text', 'parent']].applymap(lambda x: len(x.split()))
 
+
+
 for feature in ['text', 'parent']:
-    sarc_prop = sarcastic_proportion_count(df_train_len[[constants.TARGET, feature]], target_info_rate)
+    sarc_prop = sarcastic_proportion_count(df_train_len.loc[abs(zscore(df_train_len[feature])) < 3,
+                                           [constants.TARGET, feature]], target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_" + feature + ".csv"))
 
     if constants.ENABLE_OUT:
         print("\nAnalisi delle proporzioni sarcastiche per la lunghezza di ", feature, ":\n", sarc_prop.head(5), "\n\n")
+
+sarc_prop = sarcastic_proportion_count(df_train_len.loc[(abs(zscore(df_train_len[['text', 'parent']])) < 3).all(axis=1),
+                                                        [constants.TARGET, 'text', 'parent']], target_info_rate)
+sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_text_parent.csv"))
 
 
 """## Fase di analisi del testo
@@ -180,7 +190,6 @@ def word_cloud_generator(df_sp, save_name):
     info_min, info_max = color_map['info_rate'].min(), color_map['info_rate'].max()
     color_map['rate_s'] = (color_map['info_rate'] - info_min) / (info_max - info_min)
     color_map['color'] = sample_colorscale(constants.COLOR_SCALE, color_map['rate_s'])
-
     color_dict = color_map.set_index('element')['color']
 
     wc = WordCloud(width=1600, height=800, background_color='white',

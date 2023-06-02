@@ -9,17 +9,17 @@ import os
 import constants
 from general_data import target_info_rate
 
-
 len_dfs = {'text': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text.csv")),
            'parent': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_parent.csv"))}
+len_text_parent = pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text_parent.csv"))
 
 for df_name, df in len_dfs.items():
     df = df.rename(columns={df.columns[0]: 'len'})
     df['prop'] = round(df['prop'] * 100, 0)
-    len_dfs[df_name] = df.loc[abs(zscore(df['len']) < 3)]
+    len_dfs[df_name] = df
 
 tot_range = {}
-for df_name, df in len_dfs.items():
+for df_name, df in list(len_dfs.items()) + [('text_parent', len_text_parent)]:
     tot_range[df_name] = df['tot'].quantile(np.arange(0, 1.01, 0.01))[::-1]
     tot_range[df_name].index = ((1 - tot_range[df_name].index.values) * 100).round().astype(int)
 
@@ -43,6 +43,19 @@ layout = dbc.Container(className="fluid", children=[
                         allowCross=False),
 
     ]),
+
+    html.Hr(className="my-5"),
+    html.Center(html.H5("Distribuzione Rateo informativo rispetto alle due lunghezze simultaneamente")),
+    dcc.Graph(id="len_s_info_rate_graph"),
+
+    dbc.Container(className="mt-3", children=[
+        dbc.Label("Numero di campioni per gruppo:"),
+        dcc.RangeSlider(id="len_s_tot_slider", min=0, max=100, step=1, dots=False, value=(0, 50), className="mt-1",
+                        allowCross=False,
+                        marks={mark: str(round(v)) for mark, v in tot_range['text_parent'].iloc[::10].items()}),
+
+    ])
+
 ])
 
 
@@ -72,8 +85,20 @@ def update_len_info_rate_graph(ft_s, tot_value):
     df_len = len_dfs[ft_s]
     tot_value = (tot_range[ft_s][tot_value[0]], tot_range[ft_s][tot_value[1]])[::-1]
 
-    return px.bar(df_len.loc[df_len['tot'].between(*tot_value) & df_len['len']],
+    return px.bar(df_len.loc[df_len['tot'].between(*tot_value)],
                   x="len", y="info_rate", text_auto=True, hover_data=['prop', 'tot'], range_y=[0, 51],
                   labels={'len': 'Numero di parole nelle sentenze', 'prop': 'Sarcastica (%)',
                           'info_rate': 'Rateo informativo', 'tot': 'Numero campioni'}
                   ).update_layout(xaxis=dict(rangeslider=dict(visible=True)))
+
+
+@callback(Output(component_id='len_s_info_rate_graph', component_property='figure'),
+          [Input(component_id='len_s_tot_slider', component_property='value')])
+def update_len_s_info_rate_graph(tot_value):
+    tot_value = (tot_range['text_parent'][tot_value[0]], tot_range['text_parent'][tot_value[1]])[::-1]
+
+    return px.density_heatmap(len_text_parent.loc[len_text_parent['tot'].between(*tot_value)], x='parent', y='text',
+                              z='info_rate', color_continuous_scale=constants.COLOR_SCALE, hover_data=['prop', 'tot'],
+                              labels={'parent': 'Lunghezza sentenze del Parent', 'text': 'Lunghezza sentenze nel Testo',
+                                      'prop': 'Sarcastica (%)', 'info_rate': 'Rateo informativo',
+                                      'tot': 'Numero campioni'}, histfunc='avg', marginal_x='box', marginal_y='box')
