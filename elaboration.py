@@ -290,69 +290,6 @@ train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].
 train_text = train_text.applymap(lambda x: " ".join(x))
 train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
-#
-# def compute_helpful_words(text, target, vocabulary_size=1000, z_score=3):
-#     """
-#     Funzione che calcola le parole più utili per un modello, calcolando le proporzioni in cui compaiono sarcastiche e
-#     non, per poi mantenere quelle che superano lo z score
-#     :param text: serie contente il testo da elaborare (sotto forma di lista di token)
-#     :type text: pd.Series
-#     :param target: serie del target che (avendo lo stesso indice di text) fornisce la label
-#     :type target: pd.Series
-#     :param vocabulary_size: numero di feature-parole da estrarre
-#     :type vocabulary_size: int or None
-#     :param z_score: precisione di esclusione
-#     :type z_score: float
-#     :return: dataframe che ha come indice le parole, e come valori le loro proporzioni
-#     :rtype: pd.DataFrame
-#     """
-#     text_vectorizer = CountVectorizer(max_features=vocabulary_size)
-#     text = text.apply(lambda words_list: " ".join(words_list))
-#
-#     text_vectorized = text_vectorizer.fit_transform(text)
-#     target = target.to_frame(constants.TARGET)
-#     target['sparse_index'] = np.arange(len(target))
-#
-#     index_s = target.loc[target[constants.TARGET] == 1, 'sparse_index']
-#     index_ns = target.loc[target[constants.TARGET] == 0, 'sparse_index']
-#     text_vectorized_s, text_vectorized_ns = text_vectorized[index_s.values] > 0, text_vectorized[index_ns.values] > 0
-#
-#     text_s_prop = pd.DataFrame(index=text_vectorizer.get_feature_names_out(), columns=['sarcastic', 'not_sarcastic'])
-#     text_s_prop['sarcastic'] = np.array(text_vectorized_s.sum(axis=0))[0] / len(index_s)
-#     text_s_prop['not_sarcastic'] = np.array(text_vectorized_ns.sum(axis=0))[0] / len(index_ns)
-#     text_s_prop['rate'] = text_s_prop['sarcastic'] / (text_s_prop['sarcastic'] + text_s_prop['not_sarcastic'])
-#     text_s_prop['tot_occ'] = (text_s_prop['sarcastic'] * len(index_s) +
-#                               text_s_prop['not_sarcastic'] * len(index_ns))
-#
-#     # elimino le parole che occorrono poco
-#     text_s_prop = text_s_prop.loc[text_s_prop['tot_occ'] > text_s_prop['tot_occ'].quantile(0.3)]
-#
-#     return text_s_prop.loc[abs(zscore(text_s_prop['rate'])) >= z_score].sort_values(by='rate', ascending=False)
-#
-#
-# precision = 2
-# vocab_size = None
-#
-# nsw_hw = compute_helpful_words(df_train['text_nsw'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
-# nsw_st_hw = compute_helpful_words(df_train['text_nsw_st'], df_train[constants.TARGET], vocabulary_size=vocab_size,
-#                                   z_score=precision)
-# st_hw = compute_helpful_words(df_train['text_st'], df_train[constants.TARGET], vocabulary_size=vocab_size, z_score=precision)
-#
-# nsw_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_hw.csv"))
-# nsw_st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "nsw_st_hw.csv"))
-# st_hw.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text_hp", "st_hw.csv"))
-#
-#
-# if constants.ENABLE_OUT:
-#     print("nsw:\n", nsw_hw, "\n\nnsw_st:\n", nsw_st_hw, "\n\nst:\n", st_hw)
-#     print("\n\nIl migliore è:\t",
-#           pd.Series(index=['nsw', 'nsw_st', 'st'], data=[len(text) for text in [nsw_hw, nsw_st_hw, st_hw]]
-#                     ).sort_values(ascending=False))
-#
-# """Vista l'uguaglianza dei tre, si decide di usare il testo senza stopwords e stemming (in quanto di dimensione ridotta)
-#
-# """
-
 df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw', 'text_st']
                          ).rename(columns={'text_nsw_st': 'text'})
 
