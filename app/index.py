@@ -1,9 +1,8 @@
-
 from dash import html, dcc
 from dash.dependencies import Input, Output
 
 from app import app
-from pages import context, text, model_training, model_testing, dashboard, len_analysis
+from pages import context, text, model_training, model_demo, dashboard, len_analysis
 from components import navbar, footer
 
 app.layout = html.Div([
@@ -27,8 +26,8 @@ def display_page(pathname):
             return len_analysis.layout
         case '/model_training':
             return model_training.layout
-        case '/model_testing':
-            return model_testing.layout
+        case '/model_demo':
+            return model_demo.layout
         case _:
             return dashboard.layout
 
