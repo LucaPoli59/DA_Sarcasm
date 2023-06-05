@@ -35,9 +35,10 @@ parent_input = tf.keras.Input(shape=(), dtype=tf.string, name='parent')
 
 text_parent_layers = bert_processor([text_input, parent_input])
 text_parent_layers = bert_backbone(text_parent_layers)['sequence_output']
-text_parent_layers = keras_nlp.layers.TransformerEncoder(num_heads=2, intermediate_dim=521, name="text_parent.encoder"
+text_parent_layers = keras_nlp.layers.TransformerEncoder(num_heads=2,
+                                                         intermediate_dim=521, name="text_parent.transformer"
                                                          )(text_parent_layers)[:, bert_backbone.cls_token_index, :]
-text_parent_layers = tf.keras.layers.Dense(10, name="text_parent.encoded.pr")(text_parent_layers)
+text_parent_layers = tf.keras.layers.Dense(10, name="text_parent.pr")(text_parent_layers)
 # parent_layers = tf.keras.layers.Dense(10, name="parent.encoded.pr")(parent_layers)
 # text_parent_layers = tf.keras.layers.Concatenate(name="text_parent.concat")([text_layers, parent_layers,
 #                                                                              text_len_input, parent_len_input])
