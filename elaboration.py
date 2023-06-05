@@ -283,8 +283,8 @@ train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].
 train_text = train_text.applymap(lambda x: " ".join(x))
 train_text.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"))
 
-df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw', 'text_st']
-                         ).rename(columns={'text_nsw_st': 'text'})
+df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw_st', 'text_st']
+                         ).rename(columns={'text_nsw': 'text'})
 
 """## Fase di preprocessing finale
 In questa fase avviene il preprocessing finale prima del modello:
@@ -316,28 +316,34 @@ def text_processing(text, punctuation, join_str=None):
     # eliminazione delle stopwords
     nsw = tokenized.apply(lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
 
-    stem = LancasterStemmer()
-    nsw_st = nsw.apply(lambda word_list: [stem.stem(word) for word in word_list])
+    # stem = LancasterStemmer()
+    # nsw_st = nsw.apply(lambda word_list: [stem.stem(word) for word in word_list])
 
+    # if join_str is not None:
+    #     nsw_st = nsw_st.apply(lambda words_list: join_str.join(words_list))
+    #
+    # return nsw_st
     if join_str is not None:
-        nsw_st = nsw_st.apply(lambda words_list: join_str.join(words_list))
+        nsw = nsw.apply(lambda words_list: join_str.join(words_list))
 
-    return nsw_st
+    return nsw
 
 
-def dataset_processing(dataframe, punctuation):
+def dataset_processing(dataframe, punctuation, join_str):
     """
     Funzione che elabora il dataset per essere usato dal modello
     :param dataframe: dataframe d'input
     :type dataframe: pd.DataFrame
     :param punctuation: punti da eliminare
     :type punctuation: list
+    :param join_str: stringa usata per effettuare l0unione dei token (riconvertendo il testo da lista a stringa)
+    :type join_str: str
     :return: dataframe rielaborato
     :rtype: pd.DataFrame
     """
     dataframe = dataset_opening_preprocessing(dataframe)
-    dataframe['text'] = text_processing(dataframe['text'], punctuation, join_str=" <> ")
-    dataframe['parent'] = text_processing(dataframe['parent'], punctuation, join_str=" <> ")
+    dataframe['text'] = text_processing(dataframe['text'], punctuation, join_str=join_str)
+    dataframe['parent'] = text_processing(dataframe['parent'], punctuation, join_str=join_str)
     return dataframe
 
 
@@ -366,9 +372,9 @@ if constants.ENABLE_OUT:
     print("lunghezza massima parent: ", parent_len)
 
 # Preparo i dati di train per il modello
-df_train['text'] = df_train['text'].apply(lambda words_list: " <> ".join(words_list))
-df_train['parent'] = df_train['parent'].apply(lambda words_list: " <> ".join(words_list))
-df_val = dataset_processing(df_val, del_punctuation)
+df_train['text'] = df_train['text'].apply(lambda words_list: " ".join(words_list))
+df_train['parent'] = df_train['parent'].apply(lambda words_list: " ".join(words_list))
+df_val = dataset_processing(df_val, del_punctuation, " ")
 
 df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_processed.csv"))
 df_val.to_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"))
@@ -379,6 +385,6 @@ df_val.to_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"))
 df_test = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "test.tsv"),
                       sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.03)
 
-df_test = dataset_processing(dataset_opening_preprocessing(df_test), del_punctuation)
+df_test = dataset_processing(dataset_opening_preprocessing(df_test), del_punctuation, " ")
 df_test.to_csv(os.path.join(constants.DATA_OUT_PATH, "test_processed.csv"))
 
