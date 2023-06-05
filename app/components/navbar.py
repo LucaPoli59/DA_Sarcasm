@@ -11,7 +11,7 @@ def navbar():
                 dbc.NavItem(dbc.NavLink("Context Exploring", href="/context")),
                 dbc.NavItem(dbc.NavLink("Text Analysis", href="/text")),
                 dbc.NavItem(dbc.NavLink("Model Training", href="/model_training")),
-                dbc.NavItem(dbc.NavLink("Model Testing", href="/model_testing")),
+                dbc.NavItem(dbc.NavLink("Model Demo", href="/model_demo")),
             ],
             brand="Demo",
             brand_href="/home",
