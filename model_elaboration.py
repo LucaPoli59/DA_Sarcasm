@@ -26,19 +26,27 @@ df_val['text_len'] = df_val['text_len'] / df_val['text_len'].max()
 df_val['parent_len'] = df_val['parent'].apply(lambda x: len(x.split()))
 df_val['parent_len'] = df_val['parent_len'] / df_val['parent_len'].max()
 
+
+
+
 bert_backbone = keras_nlp.models.BertBackbone.from_preset("bert_tiny_en_uncased")
 bert_processor = keras_nlp.models.BertPreprocessor.from_preset("bert_tiny_en_uncased")
 bert_backbone.trainable = False
 
 text_input = tf.keras.Input(shape=(), dtype=tf.string, name='text')
 parent_input = tf.keras.Input(shape=(), dtype=tf.string, name='parent')
+text_len_input = tf.keras.Input(shape=(1,), dtype=tf.float32, name='text_len')
+parent_len_input = tf.keras.Input(shape=(1,), dtype=tf.float32, name='parent_len')
 
 text_parent_layers = bert_processor([text_input, parent_input])
 text_parent_layers = bert_backbone(text_parent_layers)['sequence_output']
 text_parent_layers = keras_nlp.layers.TransformerEncoder(num_heads=2,
                                                          intermediate_dim=521, name="text_parent.transformer"
                                                          )(text_parent_layers)[:, bert_backbone.cls_token_index, :]
-text_parent_layers = tf.keras.layers.Dense(10, name="text_parent.pr")(text_parent_layers)
+text_parent_layers = tf.keras.layers.Dense(20, name="text_parent.pr1")(text_parent_layers)
+text_parent_layers = tf.keras.layers.Concatenate(name="text_parent.concat")([text_parent_layers,
+                                                                             text_len_input, parent_len_input])
+text_parent_layers = tf.keras.layers.Dense(10, name="text_parent.pr2")(text_parent_layers)
 # parent_layers = tf.keras.layers.Dense(10, name="parent.encoded.pr")(parent_layers)
 # text_parent_layers = tf.keras.layers.Concatenate(name="text_parent.concat")([text_layers, parent_layers,
 #                                                                              text_len_input, parent_len_input])
@@ -47,13 +55,13 @@ text_parent_layers = tf.keras.layers.Dense(10, name="text_parent.pr")(text_paren
 # global_layers = tf.keras.layers.Dense(10, name="global.pr", activation=activations.relu)(text_parent_layers)
 output = tf.keras.layers.Dense(1, activation=activations.sigmoid, name='output')(text_parent_layers)
 
-model = keras.Model([text_input, parent_input], output)
+model = keras.Model([text_input, parent_input, text_len_input, parent_len_input], output)
 model.compile(optimizer="adam", loss=losses.BinaryCrossentropy(), metrics=[metrics.BinaryAccuracy()])
 model.summary()
 
 tf.keras.utils.plot_model(model, to_file='model.png')
 # columns_order = ['text', 'parent', 'text_len', 'parent_len', 'author', 'subreddit']
-columns_order = ['text', 'parent']
+columns_order = ['text', 'parent', 'text_len', 'parent_len']
 
 model.fit(x=[df_train[col] for col in columns_order], y=df_train['sarcastic'], epochs=3,
           validation_data=([df_val[col] for col in columns_order], df_val['sarcastic']))
