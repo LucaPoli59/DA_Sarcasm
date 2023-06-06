@@ -2,6 +2,12 @@ from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 import general_data as gdf
 import datetime as dt
+import os
+import constants
+import keras
+
+model = keras.models.load_model(os.path.join(gdf.constants.MODEL_DIR, "model_save_dir"))
+
 
 date_min = gdf.df_test_processed['date'].min()
 

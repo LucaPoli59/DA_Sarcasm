@@ -1,5 +1,6 @@
 import os
 import plotly.express as px
+import silence_tensorflow.auto
 
 
 PROJECT_NAME = "data_analytics"
