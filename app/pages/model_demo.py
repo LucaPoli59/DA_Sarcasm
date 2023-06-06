@@ -4,10 +4,13 @@ import general_data as gdf
 import datetime as dt
 import os
 import constants
-import keras
+import tensorflow as tf
+import keras_nlp
 
-model = keras.models.load_model(os.path.join(gdf.constants.MODEL_DIR, "model_save_dir"))
 
+model = tf.keras.models.load_model(os.path.join(gdf.constants.MODEL_DIR, "model.h5"))
+
+print(model.summary())
 
 date_min = gdf.df_test_processed['date'].min()
 

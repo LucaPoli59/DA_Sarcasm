@@ -161,8 +161,9 @@ cython_debug/
 
 
 
-# Dataset e glove
+# Dataset e model
 *.tsv
 *.json
 *.csv
 *.txt
+*.h5

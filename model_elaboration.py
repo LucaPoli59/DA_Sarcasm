@@ -1,10 +1,10 @@
 import constants
 import os
 import pandas as pd
-from tensorflow.python.keras import losses, metrics, activations
-import keras_nlp
-import keras
 import tensorflow as tf
+from tensorflow.python.keras import activations, losses, metrics, callbacks
+import keras_nlp
+
 
 df_train = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_processed.csv"), index_col='index'
                        ).sample(frac=0.1)
@@ -27,23 +27,29 @@ df_val['parent_len'] = df_val['parent'].apply(lambda x: len(x.split()))
 df_val['parent_len'] = df_val['parent_len'] / df_val['parent_len'].max()
 
 
-author_vectorizer = tf.keras.layers.TextVectorization(
-    max_tokens=10000,
-    standardize=None,
-    split=None,
-    output_mode='multi_hot',
-    name="author.hot_encoding"
-)
-author_vectorizer.adapt(df_train['author'])
+def get_hot_text_vectorizer(max_tokens=None, feature_name=None, vocabulary=None,
+                            **kwargs):
+    return tf.keras.layers.TextVectorization(
+        max_tokens=max_tokens,
+        name=str(str(feature_name) + ".hot_encoding"),
+        vocabulary=vocabulary,
+        output_mode='multi_hot',
+        split=None,
+        standardize=None,
+        **kwargs
+    )
 
-subreddit_vectorizer = tf.keras.layers.TextVectorization(
-    max_tokens=1000,
-    standardize=None,
-    split=None,
-    output_mode='multi_hot',
-    name="subreddit.hot_encoding"
-)
-subreddit_vectorizer.adapt(df_train['subreddit'])
+
+tmp_vectorizer = get_hot_text_vectorizer(max_tokens=10000)
+tmp_vectorizer.adapt(df_train['author'])
+author_vocab = tmp_vectorizer.get_vocabulary()
+
+tmp_vectorizer = get_hot_text_vectorizer(max_tokens=1000)
+tmp_vectorizer.adapt(df_train['subreddit'])
+subreddit_vocab = tmp_vectorizer.get_vocabulary()
+
+author_vectorizer = get_hot_text_vectorizer(max_tokens=10000, feature_name='author', vocabulary=author_vocab)
+subreddit_vectorizer = get_hot_text_vectorizer(max_tokens=1000, feature_name='subreddit', vocabulary=subreddit_vocab)
 
 
 bert_backbone = keras_nlp.models.BertBackbone.from_preset("bert_tiny_en_uncased")
@@ -79,12 +85,26 @@ global_layers = tf.keras.layers.Concatenate(name="global.concat")([text_parent_l
 global_layers = tf.keras.layers.Dense(10, name="global.pr", activation=activations.relu)(global_layers)
 output = tf.keras.layers.Dense(1, activation=activations.sigmoid, name='output')(global_layers)
 
-model = keras.Model([text_input, parent_input, text_len_input, parent_len_input, author_input, subreddit_input], output)
+model = tf.keras.models.Model([text_input, parent_input, text_len_input, parent_len_input,
+                               author_input, subreddit_input], output)
 model.compile(optimizer="adam", loss=losses.BinaryCrossentropy(), metrics=[metrics.BinaryAccuracy()])
 model.summary()
 
 tf.keras.utils.plot_model(model, to_file='model.png')
 columns_order = ['text', 'parent', 'text_len', 'parent_len', 'author', 'subreddit']
 
-model.fit(x=[df_train[col] for col in columns_order], y=df_train['sarcastic'], epochs=3,
-          validation_data=([df_val[col] for col in columns_order], df_val['sarcastic']))
+epochs = 1
+history = model.fit(x=[df_train[col] for col in columns_order], y=df_train['sarcastic'], epochs=epochs, batch_size=128,
+                    callbacks=[callbacks.EarlyStopping(monitor='val_binary_accuracy', patience=int(epochs/3),
+                                                       restore_best_weights=True)],
+                    validation_data=([df_val[col] for col in columns_order], df_val['sarcastic']))
+
+
+history = pd.DataFrame(history.history)
+history = history.rename(columns={'binary_accuracy': 'accuracy', 'val_binary_accuracy': 'val_accuracy'})
+history.index.name = "epoch"
+history.to_csv(os.path.join(constants.MODEL_DIR, "history.csv"))
+
+model.save(os.path.join(constants.MODEL_DIR, "model.h5"))
+
+
