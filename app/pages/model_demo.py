@@ -8,9 +8,9 @@ import tensorflow as tf
 import keras_nlp
 
 
-model = tf.keras.models.load_model(os.path.join(gdf.constants.MODEL_DIR, "model.h5"))
-
-print(model.summary())
+# model = tf.keras.models.load_model(os.path.join(gdf.constants.MODEL_DIR, "model.h5"))
+#
+# print(model.summary())
 
 date_min = gdf.df_test_processed['date'].min()
 

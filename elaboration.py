@@ -27,7 +27,7 @@ import os
 import constants
 import json
 
-
+import timeit
 
 """Dowload dei file per nltk"""
 
@@ -46,8 +46,10 @@ In questa fase verrà importato il dataset (suddividendolo in train e validation
 
 """
 
+start_timer = timeit.default_timer()
+
 df_full = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "data_full.tsv"),
-                      sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.05)
+                      sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"])
 
 df_full.to_csv(os.path.join(constants.DATA_OUT_PATH, "data_full_sample.csv"))
 
@@ -379,8 +381,10 @@ df_val.to_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"))
 
 # Preparo i dati di test per il modello
 df_test = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "test.tsv"),
-                      sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"]).sample(frac=0.03)
+                      sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"])
 
 df_test = dataset_processing(dataset_opening_preprocessing(df_test), del_punctuation, " ")
 df_test.to_csv(os.path.join(constants.DATA_OUT_PATH, "test_processed.csv"))
 
+end_timer = timeit.default_timer()
+print("Tempo di esecuzione: ", end_timer - start_timer, " secondi")
