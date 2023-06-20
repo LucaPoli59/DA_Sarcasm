@@ -36,7 +36,8 @@ ASSET_DIR = os.path.join(PROJECT_PATH, "app", "assets")
 ENABLE_OUT = False
 TARGET = 'sarcastic'
 CONTEXT_COLS = ['author', 'subreddit', 'parent']
-EMBEDDING_DIM = 300
+MODEL_COLUMNS_ORDER = ['text', 'parent', 'text_len', 'parent_len', 'author', 'subreddit']
+
 
 COLOR_SCALE = px.colors.sequential.Turbo_r
 
