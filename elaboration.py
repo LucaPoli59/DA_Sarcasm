@@ -53,7 +53,7 @@ df_full = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "data_full.tsv"),
 
 df_full.to_csv(os.path.join(constants.DATA_OUT_PATH, "data_full_sample.csv"))
 
-df_train, df_val = train_test_split(df_full, test_size=0.1)
+df_train, df_val = train_test_split(df_full, test_size=0.05)
 
 if constants.ENABLE_OUT:
     print("Dimensione del dataset:\t", len(df_train), "\n")

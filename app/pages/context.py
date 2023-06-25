@@ -44,13 +44,17 @@ dfs_sp = {'author': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "author.csv
           'date': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "date.csv"), index_col="element"),
           'subreddit': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "subreddit.csv"), index_col="element")}
 
-start2 = timeit.default_timer()
+single_count = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'),
+                            columns=['Elementi (%) associati ad un unico testo', 'Elementi totali'])
 
 for df_name in dfs_sp.keys():
+    single_count.loc[df_name] = [round((dfs_sp[df_name]['tot'] == 1).sum() / dfs_sp[df_name].shape[0] * 100, 2),
+                                 dfs_sp[df_name].shape[0]]
     dfs_sp[df_name] = dfs_sp[df_name].loc[dfs_sp[df_name]['tot'] > 1]
     dfs_sp[df_name] = dfs_sp[df_name].sort_values(by='tot', ascending=False).reset_index()
     dfs_sp[df_name]['tot_s'] = dfs_sp[df_name]['tot'] / dfs_sp[df_name]['tot'].sum() * 100
     dfs_sp[df_name]['prop'] = round(dfs_sp[df_name]['prop'] * 100)
+
 
 dfs_sp['date']['element'] = pd.to_datetime(dfs_sp['date']['element']).apply(lambda x: x.strftime("%d-%m-%Y"))
 
@@ -72,7 +76,6 @@ dfs_info_stats['std'] = [np.sqrt(np.cov(df['info_rate'].values, aweights=df['tot
 
 end = timeit.default_timer()
 print("Context page loaded, in {:.2f} seconds".format(end - start))
-print("Context page main elaboration loaded, in {:.2f} seconds".format(end - start2))
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Context Exploring", className="display-3 my-4")),
@@ -82,6 +85,7 @@ layout = dbc.Container(className="fluid", children=[
                                              labels={'value': 'Numero di campioni', 'variable': feature})),
                      class_name="col-sm-3")
              for feature, df in dfs_sp.items()], class_name="mx-2"),
+    html.Div(className="my-3", children=[dash_table.DataTable(single_count.reset_index().to_dict('records'))]),
 
     html.Hr(className="my-3"),
     html.Center(html.H4("Analisi del rateo informativo generale degli elementi unici del contesto")),
