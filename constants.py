@@ -2,7 +2,6 @@ import os
 import plotly.express as px
 import silence_tensorflow.auto
 
-
 PROJECT_NAME = "data_analytics"
 PROJECT_PATH = os.getcwd()
 
@@ -32,6 +31,8 @@ if not os.path.exists(MODEL_DIR):
     os.mkdir(MODEL_DIR)
 
 ASSET_DIR = os.path.join(PROJECT_PATH, "app", "assets")
+if not os.path.exists(ASSET_DIR):
+    os.mkdir(ASSET_DIR)
 
 ENABLE_OUT = False
 TARGET = 'sarcastic'

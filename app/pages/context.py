@@ -1,3 +1,5 @@
+import timeit
+
 from dash import html, dash_table, dcc, callback, Input, Output
 import plotly.express as px
 import dash_bootstrap_components as dbc
@@ -34,6 +36,8 @@ def compute_unique_sp(df_dict, threshold_list):
     return ris
 
 
+start = timeit.default_timer()
+
 dfs_sp = {'author': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "author.csv"), index_col="element"),
           'parent': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "parent.csv"), index_col="element"),
           'date': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "date.csv"), index_col="element"),
@@ -65,6 +69,8 @@ dfs_info_stats['avg'] = [np.average(df['info_rate'].values, weights=df['tot_s'].
 dfs_info_stats['std'] = [np.sqrt(np.cov(df['info_rate'].values, aweights=df['tot_s'].values)) for df in dfs_sp.values()]
 
 
+end = timeit.default_timer()
+print("Context page loaded, in {:.2f} seconds".format(end - start))
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Context Exploring", className="display-3 my-4")),

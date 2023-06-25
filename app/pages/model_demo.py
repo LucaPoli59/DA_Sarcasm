@@ -14,6 +14,8 @@ import keras_nlp
 
 date_min = gdf.df_test_processed['date'].min()
 
+print("model demo page loaded")
+
 layout = dbc.Container([
     dbc.Row([
         html.Center(html.H1("Demo del modello addestrato", className="display-3 my-4")),

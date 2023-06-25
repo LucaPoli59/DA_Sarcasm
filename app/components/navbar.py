@@ -6,7 +6,7 @@ def navbar():
     layout = html.Div([
         dbc.NavbarSimple(
             children=[
-                dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard")),
+                dbc.NavItem(dbc.NavLink("Dashboard", href="/")),
                 dbc.NavItem(dbc.NavLink("Sentence Len Analysis", href="/len_analysis")),
                 dbc.NavItem(dbc.NavLink("Context Exploring", href="/context")),
                 dbc.NavItem(dbc.NavLink("Text Analysis", href="/text")),

@@ -21,6 +21,8 @@ def get_wc_fig(wc, info_rate):
     return {'img': go.Image(z=wc), 'color_bar': dummy_scatter}
 
 
+start = timeit.default_timer()
+
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}
 
@@ -76,7 +78,6 @@ for name in selector_options.keys():
 wc_layout = go.Layout(margin={"t": 20, "b": 0, "r": 0, "l": 0, "pad": 0}, xaxis={"visible": False},
                       yaxis={"visible": False}, hovermode=False)
 
-
 @callback([Output("text_info_rate_graph_wc", "figure"), Output("text_info_rate_graphs_wc", "figure"),
            Output("text_info_rate_graph_bar", "figure"), Output("text_info_rate_graphs_bar", "figure")],
           [Input("text_info_rate_text_selector", "value")],
@@ -110,6 +111,9 @@ def update_sp_grid(text_selector):
 
 
 def_graph = update_info_rate_graphs('tokenized')
+
+end = timeit.default_timer()
+print('text page loaded, in', end - start, 'seconds')
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Text Analysis", className="display-3 my-4")),

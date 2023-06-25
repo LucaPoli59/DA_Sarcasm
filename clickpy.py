@@ -7,3 +7,7 @@ while True:
     mouse.click(Button.left, 1)
     print("click")
     time.sleep(60)
+
+#%%
+
+#%%
