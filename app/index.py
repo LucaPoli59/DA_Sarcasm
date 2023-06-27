@@ -1,7 +1,7 @@
 from dash import html, dcc, callback, Input, Output
 
 from app import app
-from pages import dashboard
+from pages import dashboard, context
 # from pages import context, text, dashboard, len_analysis
 from components import navbar, footer
 
@@ -18,8 +18,8 @@ app.layout = html.Div([
           prevent_initial_call=True)
 def display_page(pathname):
     match pathname:
-        # case '/context':
-        #     return context.layout
+        case '/context':
+            return context.layout
         # case '/text':
         #     return text.layout
         # case '/len_analysis':
