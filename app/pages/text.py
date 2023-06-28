@@ -24,6 +24,7 @@ df_texts = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"), 
 
 wc_array = {}
 for name in dfs_sp.keys():
+    dfs_sp[name] = dfs_sp[name].loc[dfs_sp[name]['tot'] > 1]
     dfs_sp[name]['tot_s'] = dfs_sp[name]['tot'] / dfs_sp[name]['tot'].sum() * 100
     dfs_sp[name]['prop'] = round(dfs_sp[name]['prop'] * 100)
     dfs_sp[name] = dfs_sp[name].sort_values(by='tot_s', ascending=False)
