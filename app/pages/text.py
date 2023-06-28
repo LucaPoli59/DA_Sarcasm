@@ -85,7 +85,7 @@ def update_info_rate_graph(text_selector, patch=True):
         wc = go.Figure(data=go.Image(z=wc_array[text_selector]), layout=wc_layout)
 
         bar = px.bar(bar_df, x='element', y='tot_s', color='info_rate',
-                     color_continuous_scale=constants.COLOR_SCALE,
+                     color_continuous_scale=constants.COLOR_SCALE, range_color=(0, round(100 * target_info_rate)),
                      range_x=[-0.3, 14.3], hover_name='element',
                      hover_data={'tot': True, 'tot_s': False, 'info_rate': True, 'element': False, 'prop': True},
                      labels={'element': 'Parola', 'tot_s': 'Numero di campioni (%)', 'prop': 'Sarcastica (%)',
