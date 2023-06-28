@@ -90,6 +90,7 @@ def update_len_s_info_rate_graph(tot_value, patch=True):
         graph["data"][2]["y"] = df_len['text'].values  # aggiornamento del marginal del testo
     else:
         graph = px.density_heatmap(df_len, x='parent', y='text', z='info_rate', marginal_y='box',
+                                   range_color=(0, round(100 * target_info_rate)),
                                    color_continuous_scale=constants.COLOR_SCALE, hover_data=['prop', 'tot'],
                                    labels={'parent': 'Lunghezza sentenze del Parent',
                                            'text': 'Lunghezza sentenze nel Testo',
