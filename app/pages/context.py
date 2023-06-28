@@ -45,11 +45,14 @@ dfs_sp = {'author': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "author.csv
           'subreddit': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "subreddit.csv"), index_col="element")}
 
 single_count = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'),
-                            columns=['Elementi (%) associati ad un unico testo', 'Elementi totali'])
+                            columns=['Elementi unici (%) associati ad un unico testo',
+                                     'Elementi unici totali (%)', 'Elementi unici totali'])
 
+dfs_sp_tot = {}
 for df_name in dfs_sp.keys():
     single_count.loc[df_name] = [round((dfs_sp[df_name]['tot'] == 1).sum() / dfs_sp[df_name].shape[0] * 100, 2),
-                                 dfs_sp[df_name].shape[0]]
+                                 round(dfs_sp[df_name].shape[0] / df_train.shape[0] * 100, 2), dfs_sp[df_name].shape[0]]
+    dfs_sp_tot[df_name] = dfs_sp[df_name]['tot']
     dfs_sp[df_name] = dfs_sp[df_name].loc[dfs_sp[df_name]['tot'] > 1]
     dfs_sp[df_name] = dfs_sp[df_name].sort_values(by='tot', ascending=False).reset_index()
     dfs_sp[df_name]['tot_s'] = dfs_sp[df_name]['tot'] / dfs_sp[df_name]['tot'].sum() * 100
@@ -80,11 +83,11 @@ print("Context page loaded, in {:.2f} seconds".format(end - start))
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Context Exploring", className="display-3 my-4")),
 
-    html.Center(html.H5("Distribuzione delle feature del contesto rispetto al numero di testi per ogni feature unica")),
-    dbc.Row([dbc.Col(dcc.Graph(figure=px.box(df['tot'], points='outliers', orientation='v',
-                                             labels={'value': 'Numero di campioni', 'variable': feature})),
+    html.Center(html.H5("Distribuzione degli elementi unici del contesto rispetto al numero di commenti associati")),
+    dbc.Row([dbc.Col(dcc.Graph(figure=px.box(df, points='outliers', orientation='v',
+                                             labels={'value': 'Numero di commenti', 'variable': feature})),
                      class_name="col-sm-3")
-             for feature, df in dfs_sp.items()], class_name="mx-2"),
+             for feature, df in dfs_sp_tot.items()], class_name="mx-2"),
     html.Div(className="my-3", children=[dash_table.DataTable(single_count.reset_index().to_dict('records'))]),
 
     html.Hr(className="my-3"),
