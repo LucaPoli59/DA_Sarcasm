@@ -1,8 +1,8 @@
 from dash import html, dcc, callback, Input, Output
 
 from app import app
-from pages import dashboard, context, len_analysis, text, model_training, model_testing
 from components import navbar, footer
+from pages import dashboard, context, len_analysis, text, model_training, model_testing
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),

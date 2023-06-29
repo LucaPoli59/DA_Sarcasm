@@ -1,5 +1,5 @@
-from dash import html
 import dash_mantine_components as dmc
+from dash import html
 
 
 def footer():

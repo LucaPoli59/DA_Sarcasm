@@ -1,8 +1,9 @@
+import os
 import constants
 import keras_nlp
 import pandas as pd
 import tensorflow as tf
-import os
+
 
 
 def open_dataframe(name, text_max=None, parent_max=None):
@@ -21,6 +22,7 @@ def open_dataframe(name, text_max=None, parent_max=None):
     df['text_len'] = df['text_len'] / text_max
     df['parent_len'] = df['parent_len'] / parent_max
     return df, text_max, parent_max
+
 
 # Carico i dati
 df_train, text_len_max, parent_len_max = open_dataframe("train_processed")
@@ -90,7 +92,8 @@ if not constants.LOAD_MODEL:
     model.summary()
 
     epochs = 50
-    callback = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=int(epochs / 5), restore_best_weights=True),
+    callback = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=int(epochs / 5),
+                                                 restore_best_weights=True),
                 tf.keras.callbacks.BackupAndRestore(backup_dir=os.path.join(constants.MODEL_DIR, "backup"),
                                                     delete_checkpoint=False),
                 tf.keras.callbacks.CSVLogger(os.path.join(constants.MODEL_DIR, "history.csv"), append=True)]

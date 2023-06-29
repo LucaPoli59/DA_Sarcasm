@@ -1,7 +1,8 @@
-import constants
 import os
+
 import pandas as pd
 
+import constants
 
 df_full_stats = pd.read_csv(os.path.join(constants.APP_DATA_DIR, "df_full_stats.csv"), index_col=0).iloc[:, 0]
 df_full_stats_dt = pd.read_csv(os.path.join(constants.APP_DATA_DIR, "df_full_stats_types.csv"), index_col=0).iloc[:, 0]

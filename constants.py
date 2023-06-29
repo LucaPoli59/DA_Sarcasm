@@ -1,6 +1,7 @@
 import os
-import plotly.express as px
+
 import nltk
+import plotly.express as px
 
 nltk.download('stopwords')
 

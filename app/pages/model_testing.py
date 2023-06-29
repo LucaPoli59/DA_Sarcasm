@@ -1,19 +1,19 @@
-import numpy as np
-import constants
 import datetime as dt
 import os
-import timeit
-import keras_nlp
-import tensorflow as tf
+import constants
 import dash_bootstrap_components as dbc
+import numpy as np
 import pandas as pd
 import plotly.express as px
+import keras_nlp
+import tensorflow as tf
 from dash import callback, Output, Input, State
 from dash import html, dcc, dash_table
-from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
-import general_data as gdf
 from nltk import TweetTokenizer
 from nltk.corpus import stopwords
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+
+import general_data as gdf
 
 model = tf.keras.models.load_model(os.path.join(constants.MODEL_DIR, "model.h5"))
 date_min = gdf.df_test_processed['date'].min()

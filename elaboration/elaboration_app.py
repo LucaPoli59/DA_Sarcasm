@@ -1,5 +1,7 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 import constants
 
 df_full = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "data_full.csv")).iloc[:, 1:]

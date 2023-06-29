@@ -1,16 +1,16 @@
-from dash import html, dcc, callback, Input, Output, Patch, State
+import json
+import os
+
+import dash_bootstrap_components as dbc
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import dash_bootstrap_components as dbc
-import pandas as pd
-import numpy as np
-import os
-import json
-import constants
+from dash import html, dcc, callback, Input, Output, Patch, State
 from dash_ag_grid import AgGrid
 
+import constants
 from general_data import target_info_rate
-
 
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}
