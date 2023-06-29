@@ -1,17 +1,14 @@
-import timeit
-
-from dash import html, dash_table, dcc, callback, Input, Output, Patch, ctx
-import plotly.express as px
-import dash_bootstrap_components as dbc
-import pandas as pd
-import numpy as np
-from scipy.stats import zscore
 import os
+
+import dash_bootstrap_components as dbc
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from dash import html, dcc, callback, Input, Output, Patch
 
 import constants
 from general_data import target_info_rate
 
-start = timeit.default_timer()
 len_dfs = {'text': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text.csv")),
            'parent': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_parent.csv"))}
 len_text_parent = pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text_parent.csv"))
@@ -103,9 +100,6 @@ len_tot_slider_marks, len_tot_slider_value, len_title, len_tot_graph = update_le
 len_info_rate_graph = update_len_info_rate_graph('text', len_tot_slider_value, patch=False)
 len_s_info_rate_graph = update_len_s_info_rate_graph(len_tot_slider_value, patch=False)
 
-
-end = timeit.default_timer()
-print("len_analysis page loaded, in {:.2f} seconds".format(end - start))
 
 layout = dbc.Container(className="fluid", children=[
     dbc.Container(className="d-flex flex-column justify-content-center align-items-center my-5", children=[

@@ -1,18 +1,16 @@
-import timeit
-
-from dash import html, dash_table, dcc, callback, Input, Output
-import plotly.express as px
-import dash_bootstrap_components as dbc
-import plotly.graph_objects as go
-import pandas as pd
-import numpy as np
-from scipy.stats import zscore
 import os
-import datetime as dt
+
+import dash_bootstrap_components as dbc
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from dash import html, dash_table, dcc, callback, Input, Output
 from dash_ag_grid import AgGrid
 
 import constants
-from general_data import df_train, target_info_rate
+from general_data import df_train_stats, target_info_rate
+
+train_len = df_train_stats['len']
 
 
 def compute_unique_sp(df_dict, threshold_list):
@@ -37,8 +35,6 @@ def compute_unique_sp(df_dict, threshold_list):
     return ris
 
 
-start = timeit.default_timer()
-
 dfs_sp = {'author': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "author.csv"), index_col="element"),
           'parent': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "parent.csv"), index_col="element"),
           'date': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "date.csv"), index_col="element"),
@@ -51,7 +47,7 @@ single_count = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'),
 dfs_sp_tot = {}
 for df_name in dfs_sp.keys():
     single_count.loc[df_name] = [round((dfs_sp[df_name]['tot'] == 1).sum() / dfs_sp[df_name].shape[0] * 100, 2),
-                                 round(dfs_sp[df_name].shape[0] / df_train.shape[0] * 100, 2), dfs_sp[df_name].shape[0]]
+                                 round(dfs_sp[df_name].shape[0] / train_len * 100, 2), dfs_sp[df_name].shape[0]]
     dfs_sp_tot[df_name] = dfs_sp[df_name]['tot']
     dfs_sp[df_name] = dfs_sp[df_name].loc[dfs_sp[df_name]['tot'] > 1]
     dfs_sp[df_name] = dfs_sp[df_name].sort_values(by='tot', ascending=False).reset_index()
@@ -76,9 +72,6 @@ unique_stats = compute_unique_sp(dfs_sp, np.arange(0, 50, 10))
 dfs_info_stats = pd.DataFrame(index=pd.Index(dfs_sp.keys(), name='feature'), columns=['avg', 'std'])
 dfs_info_stats['avg'] = [np.average(df['info_rate'].values, weights=df['tot_s'].values) for df in dfs_sp.values()]
 dfs_info_stats['std'] = [np.sqrt(np.cov(df['info_rate'].values, aweights=df['tot_s'].values)) for df in dfs_sp.values()]
-
-end = timeit.default_timer()
-print("Context page loaded, in {:.2f} seconds".format(end - start))
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Context Exploring", className="display-3 my-4")),

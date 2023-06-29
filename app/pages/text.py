@@ -5,7 +5,6 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import numpy as np
 import os
-import timeit
 import json
 import constants
 from dash_ag_grid import AgGrid
@@ -13,8 +12,7 @@ from dash_ag_grid import AgGrid
 from general_data import target_info_rate
 
 
-start = timeit.default_timer()
-#
+
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}
 
@@ -110,9 +108,6 @@ def update_sp_grid(text_selector):
 
 def_grid = update_sp_grid('tokenized')
 def_graph = update_info_rate_graph('tokenized', patch=False)
-
-end = timeit.default_timer()
-print('text page loaded, in', end - start, 'seconds')
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Text Analysis", className="display-3 my-4")),

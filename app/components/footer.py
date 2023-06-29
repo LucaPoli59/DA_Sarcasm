@@ -5,7 +5,7 @@ import dash_mantine_components as dmc
 def footer():
     layout = dmc.Footer(
         children=[
-            html.P("Footer test"),
+            html.P("Luca Poli 852027"),
         ],
         height=60,
         fixed=False,
