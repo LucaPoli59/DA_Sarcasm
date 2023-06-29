@@ -16,12 +16,8 @@ from nltk import TweetTokenizer
 from nltk.corpus import stopwords
 
 model = tf.keras.models.load_model(os.path.join(constants.MODEL_DIR, "model.h5"))
-
-# print(model.summary())
-
 date_min = gdf.df_test_processed['date'].min()
 
-start = timeit.default_timer()
 
 cmp_test = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_test.csv"), index_col=0)
 len_max = pd.read_csv(os.path.join(constants.MODEL_DIR, "len_max.csv"), index_col=0).iloc[:, 0]
@@ -39,13 +35,10 @@ test_roc_curve = test_roc_curve.update_yaxes(
                                                                                   title_x=0.5)
 
 test_rp = classification_report(cmp_test['True'], cmp_test['Predicted'], target_names=['Non sarcastico', 'Sarcastico'],
-                               output_dict=True)
+                                output_dict=True)
 test_rp_acc = round(test_rp.pop('accuracy'), 3)
 test_rp = pd.DataFrame(test_rp).loc[['precision', 'recall', 'f1-score'], ['Non sarcastico', 'Sarcastico']].transpose()
 test_rp = test_rp.round(3).reset_index().rename(columns={'index': 'Classe'})
-
-end = timeit.default_timer()
-print("model demo page loaded in ", end - start, " seconds")
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Demo del modello addestrato", className="display-3 my-4")),
@@ -105,7 +98,7 @@ layout = dbc.Container(className="fluid", children=[
 
         html.Div(className="my-3 d-inline-flex gap-3", children=[
             html.Label("Il commento è:", className="fs-5"),
-            dcc.Loading(html.Div(id="demo_output_prediction", className="fs-5"))
+            dcc.Loading(html.Div(id="demo_output_prediction", className="fs-5", children="       "))
         ])
     ]),
     html.Center(html.H3("Risultati sul dataset di test", className="my-5")),
@@ -120,7 +113,7 @@ layout = dbc.Container(className="fluid", children=[
         ], className="col-6"),
         dbc.Col([
             dbc.Row(html.Center(html.H5("Report della classificazione"))),
-            dbc.Row(html.P("Precisione: " + str(test_rp_acc))),
+            dbc.Row(html.P("Accuracy: " + str(test_rp_acc))),
             dbc.Row(dash_table.DataTable(test_rp.to_dict('records'))),
 
         ], className="col-6"),
@@ -194,12 +187,8 @@ def predict(n_clicks, text, parent, subreddit, author, date):
         text, parent = _process_text(text), _process_text(parent)
         text_len, parent_len = len(text.split()) / len_max['text'], len(parent.split()) / len_max['parent']
         instance = [text, parent, text_len, parent_len, subreddit]
-        pred = model.predict(x=[np.array([val]) for val in instance], batch_size=1)
+        pred = model.predict(x=[np.array([val]) for val in instance], batch_size=1)[0][0]
 
-        print(pred[0][0])
-
-        if round(pred[0][0]) == 1:
-            return "Sarcastico", {"color": "green"}
-        return "Non Sarcastico", {"color": "red"}
-
-
+        if round(pred) == 1:
+            return "Sarcastico, con probabilità del " + str(round(pred * 100)) + "%", {"color": "green"}
+        return "Non Sarcastico, con probabilità del " + str(round(pred * 100)) + "%", {"color": "red"}

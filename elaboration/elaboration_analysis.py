@@ -154,21 +154,6 @@ sarc_prop = sarcastic_proportion_count(df_train_len.loc[(abs(zscore(df_train_len
 sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_text_parent.csv"))
 
 
-"""## Fase di analisi del testo
-In questa fase si analizza il testo del commento (quindi la feature 'text').
-Verranno analizzati i token di cui esso si compone, e come la frequenza di essi varia nelle fasi di:
-- Eliminazione della punteggiatura;
-- Eliminazione delle stopwords;
-- Stemming.
-
-Producendo tre tipi di testo:
-- nsw: senza stopwords;
-- nsw_st: senza stopwords e con stemming;
-- st: con stemming.
-che verranno poi confrontati nella successiva analisi
-"""
-
-
 def word_cloud_generator(df_sp, save_name):
     """
     Funzione che genera la wordcloud di una serie di frequenza di parole,
@@ -235,10 +220,9 @@ if constants.ENABLE_OUT:
     plt.show()
 
 
-"""Vista la distribuzione del rateo dei simboli, si decide di mantenere quelli che sono degli outliers alla distribuzione (perchè possono discriminare meglio una frase sarcastica o non)"""
 
-# Rimozione
-outlier_punctuation = punctuation_freq.loc[abs(zscore(punctuation_freq['prop'])) >= 3].index.values
+# Rimozione della punteggiatura
+outlier_punctuation = ['!']
 del_punctuation = [point for point in list(all_punctuation) if point not in outlier_punctuation]
 df_train['text_tokenized'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in del_punctuation])

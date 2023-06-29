@@ -8,8 +8,6 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_curve, 
 import timeit
 import constants
 
-
-start = timeit.default_timer()
 train_history = pd.read_csv(os.path.join(constants.MODEL_DIR, "history.csv"), index_col=0)
 cmp_val = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_val.csv"), index_col=0)
 
@@ -24,14 +22,11 @@ val_roc_curve = val_roc_curve.update_yaxes(
     scaleanchor="x", scaleratio=1).update_xaxes(constrain='domain').update_layout(title_text=f'AUC = {val_auc:.4f}',
                                                                                   title_x=0.5)
 
-val_rp = classification_report(cmp_val['True'], cmp_val['Predicted'], target_names=['Non sarcastico', 'Sarcastico'], output_dict=True)
+val_rp = classification_report(cmp_val['True'], cmp_val['Predicted'], target_names=['Non sarcastico', 'Sarcastico'],
+                               output_dict=True)
 val_rp_acc = round(val_rp.pop('accuracy'), 3)
 val_rp = pd.DataFrame(val_rp).loc[['precision', 'recall', 'f1-score'], ['Non sarcastico', 'Sarcastico']].transpose()
 val_rp = val_rp.round(3).reset_index().rename(columns={'index': 'Classe'})
-
-
-end = timeit.default_timer()
-print("Tempo di esecuzione: ", end - start)
 
 layout = dbc.Container(className="fluid", children=[
     html.Center(html.H1("Addestramento del modello", className="display-3 my-4")),
@@ -42,8 +37,12 @@ layout = dbc.Container(className="fluid", children=[
     html.Hr(className="my-5"),
     html.Center(html.H3("History di training del modello")),
     dbc.Row([
-        dbc.Col(dcc.Graph(figure=px.line(train_history[["loss", "val_loss"]]))),
-        dbc.Col(dcc.Graph(figure=px.line(train_history[["binary_accuracy", "val_binary_accuracy"]])))
+        dbc.Col(dcc.Graph(figure=px.line(train_history[["loss", "val_loss"]].rename(
+            columns={"loss": "Training", "val_loss": "Validation"}),
+                                         labels={'value': 'Loss', 'variable': 'Tipo di dataset'}))),
+        dbc.Col(dcc.Graph(figure=px.line(train_history[["binary_accuracy", "val_binary_accuracy"]].rename(
+            columns={"binary_accuracy": "Training", "val_binary_accuracy": "Validation"}),
+                                         labels={'value': 'Accuracy', 'variable': 'Tipo di dataset'})))
     ]),
 
     html.Hr(className="my-5"),
@@ -54,12 +53,12 @@ layout = dbc.Container(className="fluid", children=[
             dcc.Graph(figure=px.imshow(confusion_matrix(cmp_val['True'], cmp_val['Predicted'], normalize='true'),
                                        x=['Non Sarcastico', 'Sarcastico'], y=['Non Sarcastico ', 'Sarcastico '],
                                        text_auto=True, color_continuous_scale='blues',
-                                        labels={'color': 'Percentuale', 'x': 'Classe predetta', 'y': 'Classe reale'}
+                                       labels={'color': 'Percentuale', 'x': 'Classe predetta', 'y': 'Classe reale'}
                                        ).update_layout(coloraxis_showscale=False))
         ], className="col-6"),
         dbc.Col([
             dbc.Row(html.Center(html.H5("Report della classificazione"))),
-            dbc.Row(html.P("Precisione: " + str(val_rp_acc))),
+            dbc.Row(html.P("Accuracy: " + str(val_rp_acc))),
             dbc.Row(dash_table.DataTable(val_rp.to_dict('records'))),
 
         ], className="col-6"),
