@@ -1,6 +1,8 @@
 import os
 import plotly.express as px
-import silence_tensorflow.auto
+import nltk
+
+nltk.download('stopwords')
 
 PROJECT_NAME = "data_analytics"
 PROJECT_PATH = os.getcwd()
@@ -43,15 +45,9 @@ APP_DATA_DIR = os.path.join(PROJECT_PATH, "app", "data")
 if not os.path.exists(APP_DATA_DIR):
     os.mkdir(APP_DATA_DIR)
 
-ENABLE_OUT = False
 LOAD_MODEL = True
 TARGET = 'sarcastic'
 MODEL_COLUMNS_ORDER = ['text', 'parent', 'text_len', 'parent_len', 'subreddit']
 
 
 COLOR_SCALE = px.colors.sequential.Turbo_r
-
-
-
-# da mettere come ultima riga del file di training
-# shutil.copy2(os.path.join(constants.MODEL_DIR, "model.png"), os.path.join(constants.ASSETS_DIR, "model.png"))

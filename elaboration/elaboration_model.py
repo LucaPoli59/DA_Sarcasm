@@ -22,7 +22,7 @@ def open_dataframe(name, text_max=None, parent_max=None):
     df['parent_len'] = df['parent_len'] / parent_max
     return df, text_max, parent_max
 
-
+# Carico i dati
 df_train, text_len_max, parent_len_max = open_dataframe("train_processed")
 df_val = open_dataframe("val_processed", text_max=text_len_max, parent_max=parent_len_max)[0]
 df_test = open_dataframe("test_processed", text_max=text_len_max, parent_max=parent_len_max)[0]
@@ -30,6 +30,7 @@ df_test = open_dataframe("test_processed", text_max=text_len_max, parent_max=par
 len_max = pd.Series({'text': text_len_max, 'parent': parent_len_max})
 len_max.to_csv(os.path.join(constants.MODEL_DIR, "len_max.csv"))
 
+# Se il modello deve essere definito lo vado a creare, altrimenti lo carico da file
 if not constants.LOAD_MODEL:
     def get_hot_text_vectorizer(max_tokens=None, feature_name=None, vocabulary=None,
                                 **kwargs):
@@ -88,7 +89,7 @@ if not constants.LOAD_MODEL:
                   metrics=[tf.keras.metrics.BinaryAccuracy()])
     model.summary()
 
-    epochs = 100
+    epochs = 50
     callback = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=int(epochs / 5), restore_best_weights=True),
                 tf.keras.callbacks.BackupAndRestore(backup_dir=os.path.join(constants.MODEL_DIR, "backup"),
                                                     delete_checkpoint=False),
@@ -127,5 +128,3 @@ else:
     cmp_val = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_val.csv"), index_col=0)
     cmp_test = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_test.csv"), index_col=0)
 
-
-print(cmp_val)

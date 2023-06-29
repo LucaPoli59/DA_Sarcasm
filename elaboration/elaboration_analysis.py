@@ -27,26 +27,9 @@ import os
 import constants
 import json
 
-import timeit
 
-"""Dowload dei file per nltk"""
+"""Caricamento del dataset e preprocessing iniziale"""
 
-# nltk.download('stopwords')
-
-
-"""Definizione di alcune costanti"""
-
-
-
-"""### Fase di import del dataset e prima analisi
-In questa fase verrà importato il dataset (suddividendolo in train e validation set) e si analizzerà:
-- Il numero di righe, la presenza di duplicate e di nulle
-- La distribuzione del target
-- La presenza di elementi del contesto ripetuti
-
-"""
-
-start_timer = timeit.default_timer()
 
 df_full = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "data_full.tsv"),
                       sep="\t", names=[constants.TARGET, "text", "author", "subreddit", "date", "parent"])
@@ -54,19 +37,6 @@ df_full = pd.read_csv(os.path.join(constants.DATA_IN_PATH, "data_full.tsv"),
 df_full.to_csv(os.path.join(constants.DATA_OUT_PATH, "data_full.csv"))
 
 df_train, df_val = train_test_split(df_full, test_size=0.05)
-
-if constants.ENABLE_OUT:
-    print("Dimensione del dataset:\t", len(df_train), "\n")
-    print("tipi di variabile:\n", df_train.dtypes, "\n")
-    print("Prime righe di esempio:\n", df_train.head(3), "\n")
-    print("Righe nulle:\n", df_train.isna().sum(), "\n")
-    print("Righe duplicate:\n", df_train.duplicated().sum(), "\n")
-
-"""Si definisce un metodo di preprocessing che:
-- Rimuova le righe duplicate
-- Rimuova le righe nulle (visto che sono poche non è necessario imputarle)
-- Converta i tipi di variabile
-"""
 
 
 def dataset_opening_preprocessing(dataframe):
@@ -94,14 +64,7 @@ df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"))
 
 target_info_rate = df_train['sarcastic'].value_counts(normalize=True).max()
 
-if constants.ENABLE_OUT:
-    print("tipi di variabile dopo la conversione:\n", df_train.dtypes, "\n")
-    # Analisi del target
-    print("Stampa di 3 righe sarcastiche:\n",
-          df_train.loc[df_train[constants.TARGET] == 1].head(3)[[constants.TARGET, 'text']], "\n")
-    print("Stampa di 3 righe non sarcastiche:\n",
-          df_train.loc[df_train[constants.TARGET] == 0].head(3)[[constants.TARGET, 'text']], "\n\n")
-    print("Distribuzione del target:", round(target_info_rate * 100, 2))
+"""Calcolo del rateo informativo per gli elementi del contesto"""
 
 
 def sarcastic_proportion_count(df: pd.DataFrame, target_rate: float) -> pd.DataFrame:
@@ -133,12 +96,9 @@ for context_feature in ['subreddit', 'author', 'date', 'parent']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, context_feature]], target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, context_feature + ".csv"))
 
-    if constants.ENABLE_OUT:
-        print("\nAnalisi delle proporzioni sarcastiche per ", context_feature, ":\n", sarc_prop.head(5), "\n\n")
 
 df_train_len = df_train[['sarcastic', 'text', 'parent']].copy()
 df_train_len[['text', 'parent']] = df_train_len[['text', 'parent']].applymap(lambda x: len(x.split()))
-
 
 
 for feature in ['text', 'parent']:
@@ -146,9 +106,8 @@ for feature in ['text', 'parent']:
                                            [constants.TARGET, feature]], target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_" + feature + ".csv"))
 
-    if constants.ENABLE_OUT:
-        print("\nAnalisi delle proporzioni sarcastiche per la lunghezza di ", feature, ":\n", sarc_prop.head(5), "\n\n")
 
+# nota: si eliminano gli outliers per la lunghezza del testo e del parent
 sarc_prop = sarcastic_proportion_count(df_train_len.loc[(abs(zscore(df_train_len[['text', 'parent']])) < 3).all(axis=1),
                                                         [constants.TARGET, 'text', 'parent']], target_info_rate)
 sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, "len_text_parent.csv"))
@@ -182,17 +141,13 @@ def word_cloud_generator(df_sp, save_name):
     return wc
 
 
-"""Si procede con la tokenizzazione del testo"""
+"""Fase di analisi del testo"""
 
 tweet_tokenizer = TweetTokenizer()
-
 df_train['text_tokenized'] = df_train['text'].apply(lambda x: tweet_tokenizer.tokenize(x))
 
-if constants.ENABLE_OUT:
-    print("stampa di tre frasi con i relativi token:\n", df_train[['text', 'text_tokenized']].head(3), "\n\n")
 
-"""Prima di eliminare la punteggiatura, si esamina la frequenza dei simboli in frasi sarcastiche e non, in quanto essi possono essere fonte d'informazione."""
-
+# analisi della punteggiatura
 all_punctuation = list(string.punctuation)
 all_punctuation.append("...")
 
@@ -213,13 +168,6 @@ punctuation_freq.index.name = "element"
 punctuation_freq.to_csv(os.path.join(constants.DATA_SP_PATH, "text_punctuation.csv"))
 word_cloud_generator(punctuation_freq, "text_punctuation")
 
-if constants.ENABLE_OUT:
-    print("Frequenza della punteggiatura in frasi sarcastiche:\n", punctuation_freq, "\n\n")
-    plt.subplots()
-    punctuation_freq['prop'].plot(kind='bar', title="Frequenza della punteggiatura in frasi sarcastiche")
-    plt.show()
-
-
 
 # Rimozione della punteggiatura
 outlier_punctuation = ['!']
@@ -228,13 +176,12 @@ df_train['text_tokenized'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in del_punctuation])
 
 
-"""Si procede con l'eliminazione delle stopwords"""
+# Eliminazione delle stopwords
 
 df_train['text_nsw'] = df_train['text_tokenized'].apply(
     lambda word_list: [word for word in word_list if word not in stopwords.words('english')])
 
 
-"""Si termina la fase con lo stemming"""
 
 # Stemming
 stemmer = LancasterStemmer()
@@ -246,13 +193,7 @@ df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemme
 
 
 
-"""## Confronto dei tipi di testo
-In questa fase verranno confrontati i tre tipi di testi prodotti (nsw, nsw_st, st), in modo da individuare quale di essi porta più informazioni.
-
-"""
-
-"""## Confronto tramite sarcastic value rate
-"""
+# Confronto dei tipi di testo
 
 for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type),
@@ -275,7 +216,6 @@ df_train = df_train.drop(columns=['text', 'text_tokenized', 'text_nsw_st', 'text
 """## Fase di preprocessing finale
 In questa fase avviene il preprocessing finale prima del modello:
 - Si elabora il testo parent come il testo del commento
-- Si calcola la lunghezza delle frasi per il parent e per il testo
 - Si preparano i dati del set di validation (usando i principi estratti dal train set)
 """
 
@@ -329,29 +269,9 @@ def dataset_processing(dataframe, punctuation, join_str):
     return dataframe
 
 
-def max_sentence_len(text):
-    """
-    Funzione che restituisce la lunghezza massima delle sentenze
-    il valore massimo viene calcolato eliminando le sentenze troppo lunghe (quelle outliers, trovate tramite l'IQR)
-    :param text: testo d'input
-    :type text: pd.Series
-    :return: lunghezza massima
-    :rtype: int
-    """
-    text_s_len = text.apply(len)
-    q1, q3 = text_s_len.quantile(0.25), text_s_len.quantile(0.75)
-    return round(2 * (q3 + 1.5 * (q3 - q1)))
+# Processo il parent come il testo normale
+df_train['parent'] = text_processing(df_train['parent'], del_punctuation)
 
-
-df_train['parent'] = text_processing(df_train['parent'], del_punctuation)  # Processo il parent come il testo normale
-
-# Calcolo il numero di token massimo nella distribuzione di testo e parent (parametro utilizzato dal modello)
-text_len = max_sentence_len(df_train['text'])
-parent_len = max_sentence_len(df_train['parent'])
-
-if constants.ENABLE_OUT:
-    print("lunghezza massima testo: ", text_len)
-    print("lunghezza massima parent: ", parent_len)
 
 # Preparo i dati di train per il modello
 df_train['text'] = df_train['text'].apply(lambda words_list: " ".join(words_list))
@@ -360,7 +280,6 @@ df_val = dataset_processing(df_val, del_punctuation, " ")
 
 df_train.to_csv(os.path.join(constants.DATA_OUT_PATH, "train_processed.csv"))
 df_val.to_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"))
-
 
 
 # Preparo i dati di test per il modello
