@@ -12,7 +12,6 @@ from dash_ag_grid import AgGrid
 from general_data import target_info_rate
 
 
-
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}
 

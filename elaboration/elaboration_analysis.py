@@ -13,20 +13,18 @@ Original file is located at
 Import delle librerie
 """
 
+import json
+import os
 import re
 import string
 import pandas as pd
 from nltk import LancasterStemmer, TweetTokenizer
 from nltk.corpus import stopwords
+from plotly.express.colors import sample_colorscale
 from scipy.stats import zscore
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 from wordcloud import WordCloud
-from plotly.express.colors import sample_colorscale
-import os
 import constants
-import json
-
 
 """Caricamento del dataset e preprocessing iniziale"""
 
@@ -192,17 +190,13 @@ df_train['text_nsw_st'] = df_train['text_nsw'].apply(
 df_train['text_st'] = df_train['text_tokenized'].apply(lambda word_list: [stemmer.stem(word) for word in word_list])
 
 
-
 # Confronto dei tipi di testo
-
 for text_type in ['text_nsw', 'text_nsw_st', 'text_st', 'text_tokenized']:
     sarc_prop = sarcastic_proportion_count(df_train[[constants.TARGET, text_type]].explode(column=text_type),
                                            target_info_rate)
     sarc_prop.to_csv(os.path.join(constants.DATA_SP_PATH, text_type + ".csv"))
     word_cloud_generator(sarc_prop, text_type)
 
-    if constants.ENABLE_OUT:
-        print("\nAnalisi delle proporzioni sarcastiche per testo di tipo ", text_type, ":\n", sarc_prop.head(5), "\n\n")
 
 train_text = df_train[['text_tokenized', 'text_nsw', 'text_nsw_st', 'text_st']].rename({
     'text_tokenized': 'tokenized', 'text_nsw': 'nsw', 'text_nsw_st': 'nsw_st', 'text_st': 'st'}, axis='columns')

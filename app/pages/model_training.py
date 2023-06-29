@@ -5,7 +5,6 @@ import pandas as pd
 import plotly.express as px
 from dash import html, dcc, dash_table
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
-import timeit
 import constants
 
 train_history = pd.read_csv(os.path.join(constants.MODEL_DIR, "history.csv"), index_col=0)
