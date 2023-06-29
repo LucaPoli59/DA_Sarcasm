@@ -1,5 +1,7 @@
 import os
 
+os.popen("pip install -r requirements.txt")
+
 import nltk
 import plotly.express as px
 
