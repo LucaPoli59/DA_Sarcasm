@@ -1,0 +1,13 @@
+numpy
+pandas
+plotly
+dash
+tensorflow
+nltk
+scikit-learn
+scipy
+wordcloud
+dash-bootstrap-components
+dash-mantine-components
+dash-ag-grid
+tensorflow-text==2.10.0
