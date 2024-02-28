@@ -18,10 +18,12 @@ import general_data as gdf
 
 dash.register_page(__name__, path="/model_testing", name="Model Testing", title="Model Testing", order=5, nav=True)
 
-# model = tf.keras.models.load_model(os.path.join(constants.MODEL_DIR, "model.h5"))
-model = None
+try:
+    model = tf.keras.models.load_model(os.path.join(constants.MODEL_DIR, "model.h5"))
+except:
+    print("Loading model failed")
+    model = None
 date_min = gdf.df_test_processed['date'].min()
-
 
 cmp_test = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_test.csv"), index_col=0)
 len_max = pd.read_csv(os.path.join(constants.MODEL_DIR, "len_max.csv"), index_col=0).iloc[:, 0]
