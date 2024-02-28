@@ -1,8 +1,5 @@
-import nltk
 import os
 import plotly.express as px
-
-nltk.download('stopwords')
 
 PROJECT_PATH = os.getcwd()
 SAMPLE_DIM = 1000
