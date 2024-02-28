@@ -13,4 +13,3 @@ tensorflow==2.10.1
 whitenoise==6.6.0
 wordcloud==1.9.3
 gunicorn
-dash-tools

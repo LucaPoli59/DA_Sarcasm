@@ -9,6 +9,8 @@ df_train = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train.csv"), index
 df_train_processed = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_processed.csv"), index_col="index")
 df_val_processed = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "val_processed.csv"), index_col="index")
 df_test_processed = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "test_processed.csv"), index_col="index")
+df_texts = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"), index_col="index")
+
 
 df_train['date'] = pd.to_datetime(df_train['date'])
 df_train_processed['date'] = pd.to_datetime(df_train_processed['date'])
@@ -38,3 +40,4 @@ df_train.sample(constants.SAMPLE_DIM).to_csv(os.path.join(constants.APP_DATA_DIR
 df_train_processed.sample(constants.SAMPLE_DIM).to_csv(os.path.join(constants.APP_DATA_DIR, "df_train_processed.csv"))
 df_val_processed.sample(constants.SAMPLE_DIM).to_csv(os.path.join(constants.APP_DATA_DIR, "df_val_processed.csv"))
 df_test_processed.sample(constants.SAMPLE_DIM).to_csv(os.path.join(constants.APP_DATA_DIR, "df_test_processed.csv"))
+df_texts.sample(constants.SAMPLE_DIM).to_csv(os.path.join(constants.APP_DATA_DIR, "df_texts.csv"))

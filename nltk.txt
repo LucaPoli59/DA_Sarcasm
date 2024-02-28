@@ -1,4 +1,1 @@
-stem
-twitter
-token
 stopwords

@@ -20,7 +20,7 @@ selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw
 
 dfs_sp = {name: pd.read_csv(os.path.join(constants.DATA_SP_PATH, "text_" + name + ".csv"), index_col="element")
           for name in selector_options.keys()}
-df_texts = pd.read_csv(os.path.join(constants.DATA_OUT_PATH, "train_text.csv"), index_col="index")
+df_texts = pd.read_csv(os.path.join(constants.APP_DATA_DIR, "df_texts.csv"), index_col="index")
 
 wc_array = {}
 for name in dfs_sp.keys():
