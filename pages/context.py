@@ -6,9 +6,13 @@ import pandas as pd
 import plotly.express as px
 from dash import html, dash_table, dcc, callback, Input, Output
 from dash_ag_grid import AgGrid
+import dash
 
 import constants
 from general_data import df_train_stats, target_info_rate
+
+dash.register_page(__name__, path="/context", name="Context Exploring", title="Context Exploring", order=2, nav=True)
+
 
 train_len = df_train_stats['len']
 

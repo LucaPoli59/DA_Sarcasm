@@ -1,8 +1,5 @@
-import os
-
-os.popen("pip install -r requirements.txt")
-
 import nltk
+import os
 import plotly.express as px
 
 nltk.download('stopwords')

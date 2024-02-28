@@ -8,9 +8,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import html, dcc, callback, Input, Output, Patch, State
 from dash_ag_grid import AgGrid
+import dash
 
 import constants
 from general_data import target_info_rate
+
+dash.register_page(__name__, path="/text", name="Text Analysis", title="Text Analysis", order=3, nav=True)
 
 selector_options = {'tokenized': 'Normale', 'punctuation': 'Punteggiatura', 'nsw': 'Senza Stopwords', 'st': 'Stemming',
                     'nsw_st': 'Senza Stopwords e Stemming'}

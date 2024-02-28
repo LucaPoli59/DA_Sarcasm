@@ -2,8 +2,12 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 from dash import html, dcc
 from dash_ag_grid import AgGrid
+import dash
 
 import general_data as gd
+
+dash.register_page(__name__, path="/", name="Dashboard", title="Dashboard", order=0, nav=True)
+
 
 cols_to_grid = {'sarcastic': 'Sarcastico', 'text': 'Testo', 'author': 'Autore', 'date': 'Data',
                 'subreddit': 'Subreddit', 'parent': 'Parent'}

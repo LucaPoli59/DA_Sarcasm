@@ -5,9 +5,14 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output, Patch
+import dash
 
 import constants
 from general_data import target_info_rate
+
+dash.register_page(__name__, path="/len_analysis", name="Sentence Len Analysis", title="Sentence Len Analysis", order=1,
+                   nav=True)
+
 
 len_dfs = {'text': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_text.csv")),
            'parent': pd.read_csv(os.path.join(constants.DATA_SP_PATH, "len_parent.csv"))}

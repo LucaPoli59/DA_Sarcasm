@@ -5,9 +5,12 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 from dash import html, dcc, dash_table
+import dash
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 
 import constants
+
+dash.register_page(__name__, path="/model_training", name="Model Training", title="Model Training", order=4, nav=True)
 
 train_history = pd.read_csv(os.path.join(constants.MODEL_DIR, "history.csv"), index_col=0)
 cmp_val = pd.read_csv(os.path.join(constants.MODEL_DIR, "compare_val.csv"), index_col=0)
